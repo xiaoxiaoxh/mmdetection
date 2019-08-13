@@ -2,6 +2,7 @@ import os.path as osp
 import warnings
 
 import mmcv
+import mmcv_custom
 import numpy as np
 from imagecorruptions import corrupt
 from mmcv.parallel import DataContainer as DC
@@ -187,7 +188,7 @@ class CustomDataset(Dataset):
     def prepare_train_img(self, idx):
         img_info = self.img_infos[idx]
         # load image
-        img = mmcv.imread(osp.join(self.img_prefix, img_info['filename']))
+        img = mmcv_custom.imread(osp.join(self.img_prefix, img_info['filename']))
         # corruption
         if self.corruption is not None:
             img = corrupt(
@@ -286,7 +287,7 @@ class CustomDataset(Dataset):
     def prepare_test_img(self, idx):
         """Prepare an image for testing (multi-scale and flipping)"""
         img_info = self.img_infos[idx]
-        img = mmcv.imread(osp.join(self.img_prefix, img_info['filename']))
+        img = mmcv_custom.imread(osp.join(self.img_prefix, img_info['filename']))
         # corruption
         if self.corruption is not None:
             img = corrupt(

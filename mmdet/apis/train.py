@@ -4,7 +4,8 @@ from collections import OrderedDict
 
 import torch
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import DistSamplerSeedHook, Runner, obj_from_dict
+from mmcv.runner import DistSamplerSeedHook, obj_from_dict
+from mmcv_custom import Runner
 
 from mmdet import datasets
 from mmdet.core import (CocoDistEvalmAPHook, CocoDistEvalRecallHook,
@@ -181,6 +182,8 @@ def _dist_train(model, dataset, cfg, validate=False):
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)
+    elif cfg.auto_resume:
+        runner.auto_resume()
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
     runner.run(data_loaders, cfg.workflow, cfg.total_epochs)

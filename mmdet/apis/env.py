@@ -63,6 +63,7 @@ def get_root_logger(log_level=logging.INFO):
         logging.basicConfig(
             format='%(asctime)s - %(levelname)s - %(message)s',
             level=log_level)
+    logger.setLevel(log_level)  # setLevel manually
     rank, _ = get_dist_info()
     if rank != 0:
         logger.setLevel('ERROR')

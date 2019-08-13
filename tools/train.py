@@ -1,8 +1,13 @@
 from __future__ import division
 import argparse
 import os
+import sys
+path = os.getcwd()
+# print(path)
+sys.path.insert(0, path)
 
 import torch
+import pprint
 from mmcv import Config
 
 from mmdet import __version__
@@ -10,6 +15,7 @@ from mmdet.apis import (get_root_logger, init_dist, set_random_seed,
                         train_detector)
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
+from mmdet.utils import get_git_hash, summary
 
 
 def parse_args():
@@ -75,6 +81,12 @@ def main():
     logger = get_root_logger(cfg.log_level)
     logger.info('Distributed training: {}'.format(distributed))
 
+    # log cfg
+    logger.info('training config:{}\n'.format(pprint.pformat(cfg._cfg_dict)))
+
+    # log git hash
+    logger.info('git hash: {}'.format(get_git_hash()))
+
     # set random seeds
     if args.seed is not None:
         logger.info('Set random seed to {}'.format(args.seed))
@@ -82,6 +94,12 @@ def main():
 
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
+
+    try:
+        logger.info(summary(model, cfg))
+    except RuntimeError:
+        logger.info('RuntimeError during summary')
+        logger.info(str(model))
 
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:

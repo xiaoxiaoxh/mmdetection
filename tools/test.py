@@ -1,5 +1,9 @@
 import argparse
 import os
+import sys
+path = os.getcwd()
+# print(path)
+sys.path.insert(0, path)
 import os.path as osp
 import shutil
 import tempfile
