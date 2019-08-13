@@ -9,6 +9,7 @@ sys.path.insert(0, path)
 import torch
 import pprint
 from mmcv import Config
+import torch.distributed as dist
 
 from mmdet import __version__
 from mmdet.apis import (get_root_logger, init_dist, set_random_seed,
@@ -44,7 +45,7 @@ def parse_args():
     parser.add_argument(
         '--autoscale-lr',
         action='store_true',
-        help='automatically scale lr with the number of gpus')
+        help='automatically scale lr with the number of gpus and imgs per gpu')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -66,16 +67,19 @@ def main():
         cfg.resume_from = args.resume_from
     cfg.gpus = args.gpus
 
-    if args.autoscale_lr:
-        # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
-        cfg.optimizer['lr'] = cfg.optimizer['lr'] * cfg.gpus / 8
-
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
         distributed = False
     else:
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
+
+    # update gpu num
+    if dist.is_initialized():
+        cfg.gpus = dist.get_world_size()
+    if args.autoscale_lr:
+        # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
+        cfg.optimizer['lr'] = cfg.optimizer['lr'] * cfg.gpus / 8 * cfg.data.imgs_per_gpu / 2
 
     # init logger before other steps
     logger = get_root_logger(cfg.log_level)
