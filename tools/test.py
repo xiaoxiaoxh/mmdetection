@@ -15,7 +15,7 @@ from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, load_checkpoint
 
 from mmdet.apis import init_dist
-from mmdet.core import coco_eval, results2json, wrap_fp16_model
+from mmdet.core import lvis_eval, results2json, wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 
@@ -74,8 +74,7 @@ def collect_results(result_part, size, tmpdir=None):
                                 device='cuda')
         if rank == 0:
             tmpdir = tempfile.mkdtemp()
-            tmpdir = torch.tensor(
-                bytearray(tmpdir.encode()), dtype=torch.uint8, device='cuda')
+            tmpdir = torch.tensor(bytearray(tmpdir.encode()), dtype=torch.uint8, device='cuda')
             dir_tensor[:len(tmpdir)] = tmpdir
         dist.broadcast(dir_tensor, 0)
         tmpdir = dir_tensor.cpu().numpy().tobytes().decode().rstrip()
@@ -199,11 +198,11 @@ def main():
             print('Starting evaluate {}'.format(' and '.join(eval_types)))
             if eval_types == ['proposal_fast']:
                 result_file = args.out
-                coco_eval(result_file, eval_types, dataset.coco)
+                lvis_eval(result_file, eval_types, dataset.lvis)
             else:
                 if not isinstance(outputs[0], dict):
                     result_files = results2json(dataset, outputs, args.out)
-                    coco_eval(result_files, eval_types, dataset.coco)
+                    lvis_eval(result_files, eval_types, dataset.lvis)
                 else:
                     for name in outputs[0]:
                         print('\nEvaluating {}'.format(name))
@@ -211,7 +210,7 @@ def main():
                         result_file = args.out + '.{}'.format(name)
                         result_files = results2json(dataset, outputs_,
                                                     result_file)
-                        coco_eval(result_files, eval_types, dataset.coco)
+                        lvis_eval(result_files, eval_types, dataset.lvis)
 
     # Save predictions in the COCO json format
     if args.json_out and rank == 0:

@@ -8,6 +8,7 @@ from mmcv.parallel import DataContainer as DC
 from .utils import random_scale, to_tensor
 from imagecorruptions import corrupt
 
+
 @DATASETS.register_module
 class LvisDataSet(CustomDataset):
     def load_annotations(self, ann_file):
