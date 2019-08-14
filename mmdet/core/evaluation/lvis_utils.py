@@ -32,6 +32,7 @@ def lvis_eval(result_files, result_types, lvis, max_dets=(100, 300, 1000)):
             lvisEval.params.use_cats = 0
             lvisEval.params.max_dets = list(max_dets)
         lvisEval.run()
+        print('-'*8+'{} results'.format(res_type)+'-'*8)
         lvisEval.print_results()
 
 
