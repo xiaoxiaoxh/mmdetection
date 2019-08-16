@@ -16,7 +16,7 @@ class MiniLvisDataSet(LvisDataSet):
                     'laptop_computer': 'laptop',
                     'microwave_oven': 'microwave',
                     'toaster_oven': 'oven',
-                    'flowerpot': 'potted_plant',  # not sure!!
+                    'flower_arrangement': 'potted_plant',  # not sure!!
                     'remote_control': 'remote',
                     'ski': 'skis',
                     'baseball': 'sports_ball',  # too many types of balls

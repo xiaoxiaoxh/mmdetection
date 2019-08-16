@@ -12,6 +12,7 @@ import mmcv
 import torch
 import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+from mmcv.parallel import DataContainer as DC
 from mmcv.runner import get_dist_info, load_checkpoint
 
 from mmdet.apis import init_dist
@@ -20,20 +21,32 @@ from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 
 
-def single_gpu_test(model, data_loader, show=False):
+def single_gpu_test(model, data_loader, show=False, show_gt=False, work_dir=None):
     model.eval()
     results = []
     dataset = data_loader.dataset
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
+        test_data = dict()
+        if show_gt:
+            test_data['img'] = list(data['img'].data)
+            test_data['img_meta'] = list(data['img_meta'].data)
+        else:
+            test_data = data
         with torch.no_grad():
-            result = model(return_loss=False, rescale=not show, **data)
+            result = model(return_loss=False, rescale=not show, **test_data)
         results.append(result)
-
+        # TODO: support multiple imgs per gpu
+        if show_gt:
+            test_data['img_meta'] = [DC(test_data['img_meta'])]
+            model.module.show_gt_result(test_data, data['gt_bboxes'], data['gt_labels'], dataset.img_norm_cfg,
+                                        mask_gts=data['gt_masks'],
+                                        show=False, image_dir=osp.join(work_dir, 'vis_gt'), image_name='{}.jpg'.format(i))
         if show:
-            model.module.show_result(data, result, dataset.img_norm_cfg)
+            model.module.show_result(test_data, result, dataset.img_norm_cfg,
+                                     show=False, image_dir=osp.join(work_dir, 'vis'), image_name='{}.jpg'.format(i))
 
-        batch_size = data['img'][0].size(0)
+        batch_size = test_data['img'][0].size(0)
         for _ in range(batch_size):
             prog_bar.update()
     return results
@@ -119,6 +132,7 @@ def parse_args():
         choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
         help='eval types')
     parser.add_argument('--show', action='store_true', help='show results')
+    parser.add_argument('--show-gt', action='store_true', help='show ground truth')
     parser.add_argument('--tmpdir', help='tmp dir for writing some results')
     parser.add_argument(
         '--launcher',
@@ -161,7 +175,8 @@ def main():
 
     # build the dataloader
     # TODO: support multiple images per gpu (only minor changes are needed)
-    dataset = build_dataset(cfg.data.test)
+    # use val dataset for visualize ground truch bboxes
+    dataset = build_dataset(cfg.data.val if args.show_gt else cfg.data.test)
     data_loader = build_dataloader(
         dataset,
         imgs_per_gpu=1,
@@ -184,7 +199,8 @@ def main():
 
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
-        outputs = single_gpu_test(model, data_loader, args.show)
+        outputs = single_gpu_test(model, data_loader, args.show,
+                                  show_gt=args.show_gt, work_dir=cfg.work_dir)
     else:
         model = MMDistributedDataParallel(model.cuda())
         outputs = multi_gpu_test(model, data_loader, args.tmpdir)

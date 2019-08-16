@@ -1,5 +1,6 @@
 import logging
 from abc import ABCMeta, abstractmethod
+import os.path as osp
 
 import mmcv
 import numpy as np
@@ -92,7 +93,10 @@ class BaseDetector(nn.Module):
                     result,
                     img_norm_cfg,
                     dataset=None,
-                    score_thr=0.3):
+                    score_thr=0.3,
+                    image_dir=None,
+                    show=False,
+                    image_name=None):
         if isinstance(result, tuple):
             bbox_result, segm_result = result
         else:
@@ -134,9 +138,69 @@ class BaseDetector(nn.Module):
                 for i, bbox in enumerate(bbox_result)
             ]
             labels = np.concatenate(labels)
+            assert image_dir and image_name, 'image_dir and image_name can not be None'
             mmcv.imshow_det_bboxes(
                 img_show,
                 bboxes,
                 labels,
+                text_color='white',
                 class_names=class_names,
-                score_thr=score_thr)
+                score_thr=score_thr,
+                show=show,
+                out_file=osp.join(image_dir, image_name))
+
+    def show_gt_result(self,
+                       data,
+                       bbox_gts,
+                       label_gts,
+                       img_norm_cfg,
+                       mask_gts=None,
+                       dataset=None,
+                       image_dir=None,
+                       show=False,
+                       image_name=None):
+        bbox_gts = bbox_gts.data[0]
+        label_gts = label_gts.data[0]
+        if mask_gts:
+            mask_gts = mask_gts.data[0]
+        img_tensor = data['img'][0]
+        img_metas = data['img_meta'][0].data[0]
+        imgs = tensor2imgs(img_tensor, **img_norm_cfg)
+        assert len(imgs) == len(img_metas)
+
+        if dataset is None:
+            class_names = self.CLASSES
+        elif isinstance(dataset, str):
+            class_names = get_classes(dataset)
+        elif isinstance(dataset, (list, tuple)):
+            class_names = dataset
+        else:
+            raise TypeError(
+                'dataset must be a valid dataset name or a sequence'
+                ' of class names, not {}'.format(type(dataset)))
+
+        for img, img_meta, bbox_gt, label_gt, mask_gt in zip(imgs, img_metas, bbox_gts, label_gts, mask_gts):
+            h, w, _ = img_meta['pad_shape']
+            img_show = img[:h, :w, :]
+
+            bboxes = bbox_gt.cpu().numpy()
+            # draw segmentation masks
+            if mask_gts is not None:
+                segms = mask_gt
+                for i in range(segms.shape[0]):
+                    color_mask = np.random.randint(
+                        0, 256, (1, 3), dtype=np.uint8)
+                    mask = segms[i, :, :].astype(np.bool)
+                    img_show[mask] = img_show[mask] * 0.5 + color_mask * 0.5
+            # draw bounding boxes
+            labels = label_gt.cpu().numpy() - 1
+            assert image_dir and image_name, 'image_dir and image_name can not be None'
+            mmcv.imshow_det_bboxes(
+                img_show,
+                bboxes,
+                labels,
+                text_color='white',
+                class_names=class_names,
+                score_thr=0,
+                show=show,
+                out_file=osp.join(image_dir, image_name))
