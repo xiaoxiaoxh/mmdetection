@@ -33,7 +33,8 @@ class FCOSHead(nn.Module):
                      use_sigmoid=True,
                      loss_weight=1.0),
                  conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)):
+                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+                 init_cls_prob=0.01):
         super(FCOSHead, self).__init__()
 
         self.num_classes = num_classes
@@ -49,6 +50,7 @@ class FCOSHead(nn.Module):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.fp16_enabled = False
+        self.init_cls_prob = init_cls_prob
 
         self._init_layers()
 
@@ -89,7 +91,7 @@ class FCOSHead(nn.Module):
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
             normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
+        bias_cls = bias_init_with_prob(self.init_cls_prob)
         normal_init(self.fcos_cls, std=0.01, bias=bias_cls)
         normal_init(self.fcos_reg, std=0.01)
         normal_init(self.fcos_centerness, std=0.01)
