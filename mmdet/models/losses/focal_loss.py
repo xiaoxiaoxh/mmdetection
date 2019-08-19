@@ -21,7 +21,7 @@ def py_sigmoid_focal_loss(pred,
     # focal_weight_v1 = (alpha * target + (1 - alpha) *
     #                 (1 - target)) * pt.pow(gamma)
 
-    target = target.to(pred.get_device())
+    target = target.to(pred.get_device()).long()
     one_hot_target = torch.zeros(pred.size()[0], pred.size()[1], device=pred.get_device())
     one_hot_target = one_hot_target.scatter_(1, target.unsqueeze(1), 1).float()
     focal_weight = (alpha * one_hot_target + (1 - alpha) * (1 - one_hot_target)) * \
