@@ -39,7 +39,7 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        init_cls_prob=0.0008,  # 1/1230 for LVIS
+        init_cls_prob=0.0001,  # 1/1230 for LVIS
     ))
 # training and testing settings
 train_cfg = dict(
@@ -111,7 +111,7 @@ optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
     policy='step',
-    warmup='linear',
+    warmup='constant',
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
     step=[8, 11])
