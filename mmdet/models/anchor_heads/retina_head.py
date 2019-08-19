@@ -18,12 +18,14 @@ class RetinaHead(AnchorHead):
                  scales_per_octave=3,
                  conv_cfg=None,
                  norm_cfg=None,
+                 init_cls_prob=0.01,
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.octave_base_scale = octave_base_scale
         self.scales_per_octave = scales_per_octave
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self.init_cls_prob = init_cls_prob
         octave_scales = np.array(
             [2**(i / scales_per_octave) for i in range(scales_per_octave)])
         anchor_scales = octave_scales * octave_base_scale
@@ -67,7 +69,7 @@ class RetinaHead(AnchorHead):
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
             normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
+        bias_cls = bias_init_with_prob(self.init_cls_prob)
         normal_init(self.retina_cls, std=0.01, bias=bias_cls)
         normal_init(self.retina_reg, std=0.01)
 
