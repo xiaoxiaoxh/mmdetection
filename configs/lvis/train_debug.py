@@ -62,8 +62,8 @@ data_root = 'data/LVIS/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
-    imgs_per_gpu=4,
-    workers_per_gpu=4,
+    imgs_per_gpu=1,
+    workers_per_gpu=1,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'lvis_v0.5_train.json',
@@ -127,8 +127,8 @@ total_epochs = 12
 device_ids = range(4)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fcos_r50_caffe_fpn_gn_1x_4gpu'
+work_dir = './work_dirs/train_debug'
 load_from = None
 resume_from = None
-auto_resume = True
+auto_resume = False
 workflow = [('train', 1)]
