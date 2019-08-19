@@ -154,6 +154,7 @@ data = dict(
         flip_ratio=0,
         with_mask=False,
         with_label=False,
+        with_crowd=False,
         test_mode=True))
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
