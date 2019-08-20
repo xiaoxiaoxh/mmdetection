@@ -4,7 +4,7 @@ fp16 = dict(loss_scale=512.)
 # model settings
 model = dict(
     type='RetinaNet',
-    pretrained='modelzoo://resnet50',
+    pretrained='https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_r50_fpn_1x_20181125-7b0c2548.pth',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -124,7 +124,7 @@ evaluation = dict(interval=1)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/retinanet_r50_fpn_1x'
+work_dir = './work_dirs/retinanet_r50_fpn_1x_coco'
 load_from = None
 resume_from = None
 auto_resume = True
