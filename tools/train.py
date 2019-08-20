@@ -96,15 +96,6 @@ def main():
         logger.info('Set random seed to {}'.format(args.seed))
         set_random_seed(args.seed)
 
-    model = build_detector(
-        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
-
-    try:
-        logger.info(summary(model, cfg))
-    except RuntimeError:
-        logger.info('RuntimeError during summary')
-        logger.info(str(model))
-
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:
         datasets.append(build_dataset(cfg.data.val))
@@ -115,6 +106,16 @@ def main():
             mmdet_version=__version__,
             config=cfg.text,
             CLASSES=datasets[0].CLASSES)
+
+    model = build_detector(
+        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
+
+    try:
+        logger.info(summary(model, cfg))
+    except RuntimeError:
+        logger.info('RuntimeError during summary')
+        logger.info(str(model))
+
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
     train_detector(

@@ -1,5 +1,7 @@
+import os.path as osp
 import torch
 import torch.nn as nn
+import numpy as np
 from mmcv.cnn import normal_init
 
 from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
@@ -34,7 +36,8 @@ class FCOSHead(nn.Module):
                      loss_weight=1.0),
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 init_cls_prob=0.01):
+                 init_cls_prob=0.01,
+                 samples_per_cls_file=None):
         super(FCOSHead, self).__init__()
 
         self.num_classes = num_classes
@@ -51,6 +54,7 @@ class FCOSHead(nn.Module):
         self.norm_cfg = norm_cfg
         self.fp16_enabled = False
         self.init_cls_prob = init_cls_prob
+        self.samples_per_cls_file = samples_per_cls_file
 
         self._init_layers()
 
@@ -91,6 +95,10 @@ class FCOSHead(nn.Module):
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
             normal_init(m.conv, std=0.01)
+        if self.samples_per_cls_file and osp.exists(self.samples_per_cls_file):
+            with open(self.samples_per_cls_file, 'r') as f:
+                self.cat_instance_count = [int(line.strip()) for line in f.readlines()]
+            self.init_cls_prob = self.cat_instance_count / np.sum(self.cat_instance_count)
         bias_cls = bias_init_with_prob(self.init_cls_prob)
         normal_init(self.fcos_cls, std=0.01, bias=bias_cls)
         normal_init(self.fcos_reg, std=0.01)

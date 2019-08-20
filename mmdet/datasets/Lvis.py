@@ -13,6 +13,10 @@ from imagecorruptions import corrupt
 
 @DATASETS.register_module
 class LvisDataSet(CustomDataset):
+    def __init__(self, samples_per_cls_file=None, **kwargs):
+        self.samples_per_cls_file = samples_per_cls_file
+        super(LvisDataSet, self).__init__(**kwargs)
+
     def load_annotations(self, ann_file):
         self.lvis = LVIS(ann_file)
         self.cat_ids = self.lvis.get_cat_ids()
@@ -21,6 +25,12 @@ class LvisDataSet(CustomDataset):
             for i, cat_id in enumerate(self.cat_ids)
         }
         self.CLASSES = tuple(value['name'] for value in self.lvis.cats.values())
+        self.cat_instance_count = [value['instance_count'] for value in self.lvis.cats.values()]
+        self.cat_image_count = [value['image_count'] for value in self.lvis.cats.values()]
+        if self.samples_per_cls_file is not None:
+            with open(self.samples_per_cls_file, 'w') as file:
+                file.writelines(str(x)+'\n' for x in self.cat_instance_count)
+
         self.img_ids = self.lvis.get_img_ids()
         img_infos = []
         for i in self.img_ids:
