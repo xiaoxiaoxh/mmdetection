@@ -39,7 +39,7 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        init_cls_prob=0.0001,  # 1/1230 for LVIS
+        init_cls_prob=0.1,  # for LVIS
     ))
 # training and testing settings
 train_cfg = dict(
