@@ -103,6 +103,7 @@ class FCOSHead(nn.Module):
             with torch.no_grad():
                 self.fcos_cls.bias.data = torch.Tensor(
                     (-np.log((1 - self.init_cls_prob) / self.init_cls_prob)).astype(float))
+            print('Init cls bias with sample_per_cls_file!')
         else:
             bias_cls = bias_init_with_prob(self.init_cls_prob)
             normal_init(self.fcos_cls, std=0.01, bias=bias_cls)
