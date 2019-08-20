@@ -4,7 +4,7 @@ fp16 = dict(loss_scale=512.)
 # model settings
 model = dict(
     type='MaskRCNN',
-    pretrained='modelzoo://resnet50',
+    pretrained='https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth',
     backbone=dict(
         type='ResNet',
         depth=50,
