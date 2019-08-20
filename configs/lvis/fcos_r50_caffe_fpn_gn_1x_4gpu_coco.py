@@ -4,7 +4,7 @@ fp16 = dict(loss_scale=512.)
 # model settings
 model = dict(
     type='FCOS',
-    pretrained='open-mmlab://resnet50_caffe',
+    pretrained='https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/fcos/fcos_r50_caffe_fpn_gn_1x_4gpu_20190516-9f253a93.pth',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -39,7 +39,7 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        samples_per_cls_file='data/LVIS/samples_per_cls.txt',
+        # samples_per_cls_file='data/LVIS/samples_per_cls.txt',
     ))
 # training and testing settings
 train_cfg = dict(
@@ -62,7 +62,7 @@ test_cfg = dict(
 dataset_type = 'LvisDataSet'
 data_root = 'data/LVIS/'
 img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 data = dict(
     imgs_per_gpu=4,
     workers_per_gpu=4,
@@ -130,7 +130,7 @@ total_epochs = 12
 device_ids = range(4)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fcos_r50_caffe_fpn_gn_1x_4gpu'
+work_dir = './work_dirs/fcos_r50_caffe_fpn_gn_1x_4gpu_coco'
 load_from = None
 resume_from = None
 auto_resume = True
