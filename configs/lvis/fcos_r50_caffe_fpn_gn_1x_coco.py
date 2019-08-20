@@ -2,6 +2,7 @@
 fp16 = dict(loss_scale=512.)
 
 # model settings
+norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 model = dict(
     type='FCOS',
     pretrained='https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/fcos/fcos_r50_caffe_fpn_gn_1x_4gpu_20190516-9f253a93.pth',
@@ -62,7 +63,7 @@ test_cfg = dict(
 dataset_type = 'LvisDataSet'
 data_root = 'data/LVIS/'
 img_norm_cfg = dict(
-    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
     imgs_per_gpu=4,
     workers_per_gpu=4,
