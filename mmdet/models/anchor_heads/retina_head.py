@@ -80,7 +80,9 @@ class RetinaHead(AnchorHead):
                 self.init_cls_prob = self.cat_instance_count / np.sum(self.cat_instance_count)
                 with torch.no_grad():
                     self.retina_cls.bias.data = torch.Tensor(
-                        (-np.log((1 - self.init_cls_prob) / self.init_cls_prob)).astype(float))
+                        (-np.log((1 - self.init_cls_prob) / self.init_cls_prob)).astype(float)).repeat(
+                        self.num_anchors
+                    )
                 print('Init cls bias with sample_per_cls_file!')
             else:
                 bias_cls = bias_init_with_prob(self.init_cls_prob)

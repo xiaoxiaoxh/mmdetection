@@ -38,7 +38,7 @@ model = dict(
             alpha=0.25,
             loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0),
-        init_cls_prob=0.00005,  # for LVIS
+        init_cls_prob=0.001,  # for LVIS
         samples_per_cls_file='data/LVIS/samples_per_cls.txt',
     ))
 # training and testing settings
