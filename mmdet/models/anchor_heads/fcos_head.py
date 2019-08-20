@@ -96,11 +96,16 @@ class FCOSHead(nn.Module):
         for m in self.reg_convs:
             normal_init(m.conv, std=0.01)
         if self.samples_per_cls_file and osp.exists(self.samples_per_cls_file):
+            nn.init.normal_(self.fcos_cls.weight, mean=0, std=0.01)
             with open(self.samples_per_cls_file, 'r') as f:
                 self.cat_instance_count = [int(line.strip()) for line in f.readlines()]
             self.init_cls_prob = self.cat_instance_count / np.sum(self.cat_instance_count)
-        bias_cls = bias_init_with_prob(self.init_cls_prob)
-        normal_init(self.fcos_cls, std=0.01, bias=bias_cls)
+            with torch.no_grad():
+                self.fcos_cls.bias.data = torch.Tensor(
+                    (-np.log((1 - self.init_cls_prob) / self.init_cls_prob)).astype(float))
+        else:
+            bias_cls = bias_init_with_prob(self.init_cls_prob)
+            normal_init(self.fcos_cls, std=0.01, bias=bias_cls)
         normal_init(self.fcos_reg, std=0.01)
         normal_init(self.fcos_centerness, std=0.01)
 
