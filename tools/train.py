@@ -78,7 +78,7 @@ def main():
     if dist.is_initialized():
         cfg.gpus = dist.get_world_size()
     if args.autoscale_lr:
-        cfg.data.imgs_per_gpu = cfg.data.imgs_per_gpu / (cfg.gpus / 4)
+        cfg.data.imgs_per_gpu = int(cfg.data.imgs_per_gpu / (cfg.gpus / 4))
         # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
         cfg.optimizer['lr'] = cfg.optimizer['lr'] * cfg.gpus / 8 * cfg.data.imgs_per_gpu / 2
 
