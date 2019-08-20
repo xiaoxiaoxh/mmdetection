@@ -37,7 +37,8 @@ class FCOSHead(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  init_cls_prob=0.01,
-                 samples_per_cls_file=None):
+                 samples_per_cls_file=None,
+                 **kwargs):
         super(FCOSHead, self).__init__()
 
         self.num_classes = num_classes

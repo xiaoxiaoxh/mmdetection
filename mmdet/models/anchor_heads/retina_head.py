@@ -1,4 +1,6 @@
 import numpy as np
+import os.path as osp
+import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
@@ -19,6 +21,7 @@ class RetinaHead(AnchorHead):
                  conv_cfg=None,
                  norm_cfg=None,
                  init_cls_prob=0.01,
+                 samples_per_cls_file=None,
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.octave_base_scale = octave_base_scale
@@ -26,6 +29,7 @@ class RetinaHead(AnchorHead):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.init_cls_prob = init_cls_prob
+        self.samples_per_cls_file = samples_per_cls_file
         octave_scales = np.array(
             [2**(i / scales_per_octave) for i in range(scales_per_octave)])
         anchor_scales = octave_scales * octave_base_scale
@@ -69,8 +73,18 @@ class RetinaHead(AnchorHead):
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
             normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(self.init_cls_prob)
-        normal_init(self.retina_cls, std=0.01, bias=bias_cls)
+            if self.samples_per_cls_file and osp.exists(self.samples_per_cls_file):
+                nn.init.normal_(self.retina_cls.weight, mean=0, std=0.01)
+                with open(self.samples_per_cls_file, 'r') as f:
+                    self.cat_instance_count = [int(line.strip()) for line in f.readlines()]
+                self.init_cls_prob = self.cat_instance_count / np.sum(self.cat_instance_count)
+                with torch.no_grad():
+                    self.retina_cls.bias.data = torch.Tensor(
+                        (-np.log((1 - self.init_cls_prob) / self.init_cls_prob)).astype(float))
+                print('Init cls bias with sample_per_cls_file!')
+            else:
+                bias_cls = bias_init_with_prob(self.init_cls_prob)
+                normal_init(self.retina_cls, std=0.01, bias=bias_cls)
         normal_init(self.retina_reg, std=0.01)
 
     def forward_single(self, x):
