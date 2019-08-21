@@ -166,6 +166,8 @@ class BaseDetector(nn.Module):
         label_gts = label_gts.data[0]
         if mask_gts:
             mask_gts = mask_gts.data[0]
+        else:
+            mask_gts = []
         img_tensor = data['img'][0]
         img_metas = data['img_meta'][0].data[0]
         imgs = tensor2imgs(img_tensor, **img_norm_cfg)
@@ -188,7 +190,7 @@ class BaseDetector(nn.Module):
 
             bboxes = bbox_gt.cpu().numpy()
             # draw segmentation masks
-            if mask_gts is not None:
+            if len(mask_gts) > 0:
                 segms = mask_gt
                 for i in range(segms.shape[0]):
                     color_mask = np.random.randint(

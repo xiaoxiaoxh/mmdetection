@@ -198,12 +198,17 @@ class LvisDataSet(CustomDataset):
                                            scale_factor, flip)
 
         ori_shape = (img_info['height'], img_info['width'], 3)
+        not_exhaustive_category_ids = img_info['not_exhaustive_category_ids']
+        neg_category_ids = img_info['neg_category_ids']
         img_meta = dict(
             ori_shape=ori_shape,
             img_shape=img_shape,
             pad_shape=pad_shape,
             scale_factor=scale_factor,
-            flip=flip)
+            flip=flip,
+            not_exhaustive_category_ids=not_exhaustive_category_ids,
+            neg_category_ids=neg_category_ids,
+            )
 
         data = dict(
             img=DC(to_tensor(img), stack=True),

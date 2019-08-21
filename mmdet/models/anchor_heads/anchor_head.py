@@ -43,7 +43,8 @@ class AnchorHead(nn.Module):
                      use_sigmoid=True,
                      loss_weight=1.0),
                  loss_bbox=dict(
-                     type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)):
+                     type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
+                 ignore_missing_bboxes=False):
         super(AnchorHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -55,6 +56,7 @@ class AnchorHead(nn.Module):
             anchor_strides) if anchor_base_sizes is None else anchor_base_sizes
         self.target_means = target_means
         self.target_stds = target_stds
+        self.ignore_missing_bboxes = ignore_missing_bboxes
 
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.sampling = loss_cls['type'] not in ['FocalLoss', 'GHMC']
@@ -131,12 +133,26 @@ class AnchorHead(nn.Module):
         return anchor_list, valid_flag_list
 
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
-                    bbox_targets, bbox_weights, num_total_samples, cfg):
+                    bbox_targets, bbox_weights, img_meta, num_total_samples, cfg):
         # classification loss
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
         cls_score = cls_score.permute(0, 2, 3,
                                       1).reshape(-1, self.cls_out_channels)
+        if self.ignore_missing_bboxes and 'neg_category_ids' in img_meta and 'not_exhaustive_category_ids' in img_meta:
+            neg_category_ids = torch.Tensor(img_meta['neg_category_ids']).cuda().long() - 1
+            not_exhaustive_ids = torch.Tensor(img_meta['not_exhaustive_category_ids']).cuda().long() - 1
+
+            neg_cat_ids_all = torch.zeros(cls_score.shape[1]).cuda().scatter_(0, neg_category_ids, 1)
+            not_exhaustive_cat_ids_all = torch.zeros(cls_score.shape[1]).cuda().scatter_(0, not_exhaustive_ids, 1)
+            pred_cls = torch.argmax(cls_score, dim=1)
+            cond1 = labels == 0
+            cond2 = neg_cat_ids_all[pred_cls] == 0
+            cond3 = not_exhaustive_cat_ids_all[pred_cls] == 1
+            label_weights = torch.where(cond1 * (cond2 + cond3),
+                                        torch.zeros_like(label_weights),
+                                        label_weights)
+
         loss_cls = self.loss_cls(
             cls_score, labels, label_weights, avg_factor=num_total_samples)
         # regression loss
@@ -191,6 +207,7 @@ class AnchorHead(nn.Module):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
+            img_metas,
             num_total_samples=num_total_samples,
             cfg=cfg)
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)

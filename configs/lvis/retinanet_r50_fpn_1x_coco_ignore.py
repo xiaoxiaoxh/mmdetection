@@ -1,5 +1,5 @@
 # fp16 settings
-# fp16 = dict(loss_scale=512.)
+fp16 = dict(loss_scale=512.)
 
 # model settings
 model = dict(
@@ -125,8 +125,8 @@ evaluation = dict(interval=1)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/train_debug'
+work_dir = './work_dirs/retinanet_r50_fpn_1x_coco_ignore'
 load_from = None
 resume_from = None
-auto_resume = False
+auto_resume = True
 workflow = [('train', 1)]
