@@ -149,15 +149,21 @@ class AnchorHead(nn.Module):
             cond1 = labels == 0
             cond2 = neg_cat_ids_all[pred_cls] == 0
             cond3 = not_exhaustive_cat_ids_all[pred_cls] == 1
-            ignore_idxs = torch.nonzero(cond1 * (cond2 + cond3)).squeeze()
+            label_weights = torch.where(cond1 * (cond2 + cond3),
+                                        torch.zeros_like(label_weights),
+                                        label_weights)
+            # ignore_idxs = torch.nonzero(cond1 * (cond2 + cond3)).squeeze()
             del cond1
             del cond2
             del cond3
             del pred_cls
-        else:
-            ignore_idxs = torch.Tensor().long()
+            del not_exhaustive_cat_ids_all
+            del neg_cat_ids_all
+            del neg_category_ids
+            del not_exhaustive_ids
+            # label_weights[ignore_idxs] = 0
+            # del ignore_idxs
 
-        label_weights[ignore_idxs] = 0
         loss_cls = self.loss_cls(
             cls_score, labels, label_weights, avg_factor=num_total_samples)
         # regression loss
@@ -169,7 +175,6 @@ class AnchorHead(nn.Module):
             bbox_targets,
             bbox_weights,
             avg_factor=num_total_samples)
-        del ignore_idxs
         return loss_cls, loss_bbox
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
