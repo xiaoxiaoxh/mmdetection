@@ -40,7 +40,7 @@ def single_gpu_test(model, data_loader, show=False, show_gt=False, work_dir=None
         if show_gt:
             test_data['img_meta'] = [DC(test_data['img_meta'])]
             model.module.show_gt_result(test_data, data['gt_bboxes'], data['gt_labels'], dataset.img_norm_cfg,
-                                        mask_gts=data['gt_masks'],
+                                        mask_gts=data['gt_masks'] if 'gt_masks' in data else None,
                                         show=False, image_dir=osp.join(work_dir, 'vis_gt'), image_name='{}.jpg'.format(i))
         if show:
             model.module.show_result(test_data, result, dataset.img_norm_cfg,

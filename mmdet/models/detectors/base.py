@@ -1,5 +1,6 @@
 import logging
 from abc import ABCMeta, abstractmethod
+import os
 import os.path as osp
 
 import mmcv
@@ -139,6 +140,8 @@ class BaseDetector(nn.Module):
             ]
             labels = np.concatenate(labels)
             assert image_dir and image_name, 'image_dir and image_name can not be None'
+            if not osp.exists(image_dir):
+                os.mkdir(image_dir)
             mmcv.imshow_det_bboxes(
                 img_show,
                 bboxes,
@@ -195,6 +198,8 @@ class BaseDetector(nn.Module):
             # draw bounding boxes
             labels = label_gt.cpu().numpy() - 1
             assert image_dir and image_name, 'image_dir and image_name can not be None'
+            if not osp.exists(image_dir):
+                os.mkdir(image_dir)
             mmcv.imshow_det_bboxes(
                 img_show,
                 bboxes,
