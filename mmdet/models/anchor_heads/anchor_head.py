@@ -163,7 +163,6 @@ class AnchorHead(nn.Module):
         # regression loss
         bbox_targets = bbox_targets.reshape(-1, 4)
         bbox_weights = bbox_weights.reshape(-1, 4)
-        bbox_weights[ignore_idxs, :] = 0
         bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
         loss_bbox = self.loss_bbox(
             bbox_pred,
