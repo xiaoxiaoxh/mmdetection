@@ -47,8 +47,16 @@ class Runner(mmcv.runner.Runner):
         for i, data_batch in enumerate(data_loader):
             self._inner_iter = i
             self.call_hook('before_train_iter')
-            outputs = self.batch_processor(
-                self.model, data_batch, train_mode=True, **kwargs)
+            try:
+                outputs = self.batch_processor(
+                    self.model, data_batch, train_mode=True, **kwargs)
+            except RuntimeError as e:
+                if 'out of memory' in str(e):
+                    print('| WARNING: ran out of memory')
+                    if hasattr(torch.cuda, 'empty_cache'):
+                        torch.cuda.empty_cache()
+                else:
+                    raise e
             if not isinstance(outputs, dict):
                 raise TypeError('batch_processor() must return a dict')
             outputs['log_vars']['lr'] = self.current_lr()[0]  # add lr in log variables
