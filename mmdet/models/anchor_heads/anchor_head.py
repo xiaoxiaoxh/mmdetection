@@ -152,7 +152,6 @@ class AnchorHead(nn.Module):
             label_weights = torch.where(cond1 * (cond2 + cond3),
                                         torch.zeros_like(label_weights),
                                         label_weights)
-            # ignore_idxs = torch.nonzero(cond1 * (cond2 + cond3)).squeeze()
             del cond1
             del cond2
             del cond3
@@ -161,8 +160,6 @@ class AnchorHead(nn.Module):
             del neg_cat_ids_all
             del neg_category_ids
             del not_exhaustive_ids
-            # label_weights[ignore_idxs] = 0
-            # del ignore_idxs
 
         loss_cls = self.loss_cls(
             cls_score, labels, label_weights, avg_factor=num_total_samples)
