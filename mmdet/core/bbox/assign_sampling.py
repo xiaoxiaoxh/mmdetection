@@ -28,6 +28,8 @@ def assign_and_sample(bboxes, gt_bboxes, gt_bboxes_ignore, gt_labels, cfg):
     bbox_sampler = build_sampler(cfg.sampler)
     assign_result = bbox_assigner.assign(bboxes, gt_bboxes, gt_bboxes_ignore,
                                          gt_labels)
+    del bbox_assigner
     sampling_result = bbox_sampler.sample(assign_result, bboxes, gt_bboxes,
                                           gt_labels)
+    del bboxes, gt_bboxes, gt_bboxes_ignore, gt_labels, bbox_sampler
     return assign_result, sampling_result

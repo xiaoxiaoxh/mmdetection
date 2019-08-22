@@ -64,7 +64,6 @@ class Runner(mmcv.runner.Runner):
                     print('| WARNING: ran out of memory')
                     if hasattr(torch.cuda, 'empty_cache'):
                         torch.cuda.empty_cache()
-                else:
                     raise e
             self._iter += 1
 
