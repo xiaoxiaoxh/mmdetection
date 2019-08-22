@@ -45,7 +45,8 @@ class AnchorHead(nn.Module):
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
                  ignore_missing_bboxes=False,
-                 ignore_topk=1):
+                 init_ignore_topk=5,
+                 topk_func=None):
         super(AnchorHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -58,7 +59,9 @@ class AnchorHead(nn.Module):
         self.target_means = target_means
         self.target_stds = target_stds
         self.ignore_missing_bboxes = ignore_missing_bboxes
-        self.ignore_topk = ignore_topk
+        self.init_ignore_topk = init_ignore_topk
+        self.ignore_topk = self.init_ignore_topk
+        self.topk_func = topk_func
 
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.sampling = loss_cls['type'] not in ['FocalLoss', 'GHMC']
@@ -79,6 +82,9 @@ class AnchorHead(nn.Module):
 
         self.num_anchors = len(self.anchor_ratios) * len(self.anchor_scales)
         self._init_layers()
+
+        self.iter = None
+        self.max_iters = None
 
     def _init_layers(self):
         self.conv_cls = nn.Conv2d(self.feat_channels,
@@ -136,6 +142,11 @@ class AnchorHead(nn.Module):
 
         return anchor_list, valid_flag_list
 
+    @staticmethod
+    def linear_topk(init_topk, iter, max_iters):
+        return int(max(init_topk * (max_iters-iter) / max_iters, 1))
+        # return int(max(init_topk - iter, 1))
+
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, img_meta, num_total_samples, cfg):
         # classification loss
@@ -144,25 +155,33 @@ class AnchorHead(nn.Module):
         cls_score = cls_score.permute(0, 2, 3,
                                       1).reshape(-1, self.cls_out_channels)
         if self.ignore_missing_bboxes and 'neg_category_ids' in img_meta and 'not_exhaustive_category_ids' in img_meta:
-            neg_category_ids = torch.Tensor(img_meta['neg_category_ids']).cuda().long() - 1
-            not_exhaustive_ids = torch.Tensor(img_meta['not_exhaustive_category_ids']).cuda().long() - 1
+            with torch.no_grad():
+                neg_category_ids = torch.Tensor(img_meta['neg_category_ids']).cuda().long() - 1
+                not_exhaustive_ids = torch.Tensor(img_meta['not_exhaustive_category_ids']).cuda().long() - 1
 
-            neg_cat_ids_all = torch.zeros(cls_score.shape[1]).cuda().scatter_(0, neg_category_ids, 1)
-            not_exhaustive_cat_ids_all = torch.zeros(cls_score.shape[1]).cuda().scatter_(0, not_exhaustive_ids, 1)
-            _, topk_cls = torch.topk(cls_score, k=self.ignore_topk)
-            cond1 = labels == 0
-            cond2 = torch.ones(label_weights.shape[0], dtype=torch.uint8).cuda()
-            cond3 = torch.zeros(label_weights.shape[0], dtype=torch.uint8).cuda()
-            for i in range(self.ignore_topk):
-                cond2 = cond2 * (neg_cat_ids_all[topk_cls[:, i]] == 0)
-                cond3 = cond3 + (not_exhaustive_cat_ids_all[topk_cls[:, i]] == 1)
-            condition = cond1 * (cond2 + cond3)
-            del not_exhaustive_cat_ids_all, neg_cat_ids_all, neg_category_ids, not_exhaustive_ids, \
-                cond1, cond2, cond3
-            label_weights = torch.where(condition,
-                                        torch.zeros_like(label_weights),
-                                        label_weights)
-            cls_avg_factor = max(torch.nonzero(label_weights).shape[0], num_total_samples)
+                neg_cat_ids_all = torch.zeros(cls_score.shape[1]).cuda().scatter_(0, neg_category_ids, 1)
+                not_exhaustive_cat_ids_all = torch.zeros(cls_score.shape[1]).cuda().scatter_(0, not_exhaustive_ids, 1)
+                _, topk_cls = torch.topk(cls_score, k=self.ignore_topk)
+                cond1 = labels == 0
+                cond2 = torch.ones(label_weights.shape[0], dtype=torch.uint8).cuda()
+                cond3 = torch.zeros(label_weights.shape[0], dtype=torch.uint8).cuda()
+                for i in range(self.ignore_topk):
+                    cond2 = cond2 * (neg_cat_ids_all[topk_cls[:, i]] == 0)
+                    cond3 = cond3 + (not_exhaustive_cat_ids_all[topk_cls[:, i]] == 1)
+                    # print(torch.sum(cond1 * (cond2 + cond3)).item())
+                condition = cond1 * (cond2 + cond3)
+                del not_exhaustive_cat_ids_all, neg_cat_ids_all, neg_category_ids, not_exhaustive_ids, \
+                    cond1, cond2, cond3, topk_cls
+                label_weights = torch.where(condition,
+                                            torch.zeros_like(label_weights),
+                                            label_weights)
+                cls_avg_factor = max(torch.nonzero(label_weights).shape[0], num_total_samples)
+                # print('topk:{}, max_num:{}, effective_num:{}, frac:{}, pos:{}'.format(
+                #     self.ignore_topk,
+                #     label_weights.shape[0],
+                #     cls_avg_factor,
+                #     cls_avg_factor/label_weights.shape[0],
+                #     num_total_samples))
         else:
             cls_avg_factor = num_total_samples
         loss_cls = self.loss_cls(
@@ -211,6 +230,9 @@ class AnchorHead(nn.Module):
          num_total_pos, num_total_neg) = cls_reg_targets
         num_total_samples = (
             num_total_pos + num_total_neg if self.sampling else num_total_pos)
+        if self.topk_func is not None and hasattr(self, self.topk_func):  # add topk_func
+            topk_func = getattr(self, self.topk_func)
+            self.ignore_topk = topk_func(self.init_ignore_topk, self.iter, self.max_iters)
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,

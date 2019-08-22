@@ -43,9 +43,11 @@ class Runner(mmcv.runner.Runner):
         self.mode = 'train'
         self.data_loader = data_loader
         self._max_iters = self._max_epochs * len(data_loader)
+        self.model.module.bbox_head.max_iters = self.max_iters
         self.call_hook('before_train_epoch')
         for i, data_batch in enumerate(data_loader):
             self._inner_iter = i
+            self.model.module.bbox_head.iter = self.iter
             self.call_hook('before_train_iter')
             try:
                 outputs = self.batch_processor(

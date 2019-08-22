@@ -4,15 +4,14 @@
 # model settings
 model = dict(
     type='RetinaNet',
-    pretrained='open-mmlab://resnet50_caffe',
+    pretrained='modelzoo://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=False),
-        style='caffe'),
+        style='pytorch'),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
@@ -33,12 +32,17 @@ model = dict(
         target_means=[.0, .0, .0, .0],
         target_stds=[1.0, 1.0, 1.0, 1.0],
         loss_cls=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.1),
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.1,
+            loss_weight=10),
         loss_bbox=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0),
-        init_cls_prob=0.5,  # for LVIS
+        init_cls_prob=0.01,  # for LVIS
         # samples_per_cls_file='data/LVIS/samples_per_cls.txt',
         ignore_missing_bboxes=True,
-        ignore_topk=5,
+        init_ignore_topk=100,
+        topk_func='linear_topk',
     ))
 # training and testing settings
 train_cfg = dict(
@@ -48,12 +52,6 @@ train_cfg = dict(
         neg_iou_thr=0.4,
         min_pos_iou=0,
         ignore_iof_thr=-1),
-    # sampler=dict(
-    #     type='RandomSampler',
-    #     num=1024,
-    #     pos_fraction=0.5,
-    #     neg_pos_ub=-1,
-    #     add_gt_as_proposals=False),
     allowed_border=-1,
     pos_weight=-1,
     debug=False)
@@ -69,8 +67,8 @@ data_root = 'data/LVIS/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
-    imgs_per_gpu=1,
-    workers_per_gpu=1,
+    imgs_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'lvis_v0.5_train.json',
@@ -129,7 +127,7 @@ evaluation = dict(interval=1)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/retinanet_r50_caffe_fpn_1x_ignore_CE'
+work_dir = './work_dirs/retinanet_r50_fpn_1x_ignore_top100'
 load_from = None
 resume_from = None
 auto_resume = True
