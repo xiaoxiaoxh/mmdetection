@@ -36,7 +36,7 @@ model = dict(
             use_sigmoid=True,
             gamma=2.0,
             alpha=0.8,
-            loss_weight=100),
+            loss_weight=1),
         loss_bbox=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0),
         init_cls_prob=0.01,  # for LVIS
         # samples_per_cls_file='data/LVIS/samples_per_cls.txt',
