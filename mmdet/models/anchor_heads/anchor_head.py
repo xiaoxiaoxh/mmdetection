@@ -151,12 +151,13 @@ class AnchorHead(nn.Module):
             cond1 = labels == 0
             cond2 = neg_cat_ids_all[pred_cls] == 0
             cond3 = not_exhaustive_cat_ids_all[pred_cls] == 1
-            del pred_cls, not_exhaustive_cat_ids_all, neg_cat_ids_all, neg_category_ids, not_exhaustive_ids
-            label_weights = torch.where(cond1 * (cond2 + cond3),
+            condition = cond1 * (cond2 + cond3)
+            del pred_cls, not_exhaustive_cat_ids_all, neg_cat_ids_all, neg_category_ids, not_exhaustive_ids, \
+                cond1, cond2, cond3
+            label_weights = torch.where(condition,
                                         torch.zeros_like(label_weights),
                                         label_weights)
-            del cond1, cond2, cond3
-            cls_avg_factor = torch.nonzero(label_weights).shape[0] + 1
+            cls_avg_factor = torch.nonzero(label_weights).shape[0] + num_total_samples
         else:
             cls_avg_factor = num_total_samples
         loss_cls = self.loss_cls(
