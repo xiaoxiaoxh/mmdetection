@@ -47,17 +47,25 @@ class Runner(mmcv.runner.Runner):
         for i, data_batch in enumerate(data_loader):
             self._inner_iter = i
             self.call_hook('before_train_iter')
-            outputs = self.batch_processor(
-                self.model, data_batch, train_mode=True, **kwargs)
-            if not isinstance(outputs, dict):
-                raise TypeError('batch_processor() must return a dict')
-            outputs['log_vars']['lr'] = self.current_lr()[0]  # add lr in log variables
-            outputs['log_vars']['epoch'] = self.epoch  # add epoch in log variables
-            if 'log_vars' in outputs:
-                self.log_buffer.update(outputs['log_vars'],
-                                       outputs['num_samples'])
-            self.outputs = outputs
-            self.call_hook('after_train_iter')
+            try:
+                outputs = self.batch_processor(
+                    self.model, data_batch, train_mode=True, **kwargs)
+                if not isinstance(outputs, dict):
+                    raise TypeError('batch_processor() must return a dict')
+                outputs['log_vars']['lr'] = self.current_lr()[0]  # add lr in log variables
+                outputs['log_vars']['epoch'] = self.epoch  # add epoch in log variables
+                if 'log_vars' in outputs:
+                    self.log_buffer.update(outputs['log_vars'],
+                                           outputs['num_samples'])
+                self.outputs = outputs
+                self.call_hook('after_train_iter')
+            except RuntimeError as e:
+                if 'out of memory' in str(e):
+                    print('| WARNING: ran out of memory')
+                    if hasattr(torch.cuda, 'empty_cache'):
+                        torch.cuda.empty_cache()
+                else:
+                    raise e
             self._iter += 1
 
         self.call_hook('after_train_epoch')

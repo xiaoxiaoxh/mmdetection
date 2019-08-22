@@ -43,13 +43,7 @@ def batch_processor(model, data, train_mode):
         outputs = dict(
             loss=loss, log_vars=log_vars, num_samples=len(data['img'].data))
     except RuntimeError as e:
-        if 'out of memory' in str(e):
-            print('| WARNING: ran out of memory')
-            if hasattr(torch.cuda, 'empty_cache'):
-                torch.cuda.empty_cache()
-            outputs = dict()
-        else:
-            raise e
+        raise e
 
     return outputs
 
