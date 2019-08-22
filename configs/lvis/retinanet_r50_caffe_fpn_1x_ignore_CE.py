@@ -4,14 +4,15 @@
 # model settings
 model = dict(
     type='RetinaNet',
-    pretrained='modelzoo://resnet50',
+    pretrained='open-mmlab://resnet50_caffe',
     backbone=dict(
         type='ResNet',
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        style='pytorch'),
+        norm_cfg=dict(type='BN', requires_grad=False),
+        style='caffe'),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
@@ -127,7 +128,7 @@ evaluation = dict(interval=1)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/retinanet_r50_fpn_1x_ignore_CE'
+work_dir = './work_dirs/retinanet_r50_caffe_fpn_1x_ignore_CE'
 load_from = None
 resume_from = None
 auto_resume = True
