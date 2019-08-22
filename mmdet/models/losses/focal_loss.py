@@ -15,20 +15,22 @@ def py_sigmoid_focal_loss(pred,
                           alpha=0.25,
                           reduction='mean',
                           avg_factor=None):
-    # pred_sigmoid = pred.sigmoid()
-    # target = target.type_as(pred)
-    # pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
-    # focal_weight_v1 = (alpha * target + (1 - alpha) *
-    #                 (1 - target)) * pt.pow(gamma)
+    pred_sigmoid = pred.sigmoid()
+    target = target.type_as(pred)
+    pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
+    focal_weight = (alpha * target + (1 - alpha) *
+                    (1 - target)) * pt.pow(gamma)
     # TODO: fix bug with THCudaTensor_scatterFillKernel
-    target = target.to(pred.get_device()).long()
-    one_hot_target = torch.zeros(pred.size()[0], pred.size()[1], device=pred.get_device())
-    one_hot_target = one_hot_target.scatter_(1, target.unsqueeze(1), 1).float()
-    focal_weight = (alpha * one_hot_target + (1 - alpha) * (1 - one_hot_target)) * \
-                   torch.exp(-gamma * one_hot_target * pred -
-                   gamma * torch.log1p(torch.exp(-1.0 * pred)))
+    # target = target.to(pred.get_device()).long()
+    # one_hot_target = torch.zeros(pred.size()[0], pred.size()[1], device=pred.get_device())
+    # one_hot_target = one_hot_target.scatter_(1, target.unsqueeze(1), 1).float()
+    # focal_weight = (alpha * one_hot_target + (1 - alpha) * (1 - one_hot_target)) * \
+    #                torch.exp(-gamma * one_hot_target * pred -
+    #                gamma * torch.log1p(torch.exp(-1.0 * pred)))
+    # loss = F.binary_cross_entropy_with_logits(
+    #     pred, one_hot_target, reduction='none') * focal_weight
     loss = F.binary_cross_entropy_with_logits(
-        pred, one_hot_target, reduction='none') * focal_weight
+        pred, target, reduction='none') * focal_weight
     loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
     return loss
 
