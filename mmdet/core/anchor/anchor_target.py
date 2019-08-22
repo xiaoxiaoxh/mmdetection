@@ -112,14 +112,14 @@ def anchor_target_single(flat_anchors,
     anchors = flat_anchors[inside_flags, :]
 
     if sampling:
-        bbox_assigner = build_assigner(cfg.assigner)
-        assign_result = bbox_assigner.assign(anchors, gt_bboxes, gt_bboxes_ignore, gt_labels)
-        del bbox_assigner
-        bbox_sampler = build_sampler(cfg.sampler)
-        sampling_result = bbox_sampler.sample(assign_result, anchors, gt_bboxes, gt_labels)
-        del gt_bboxes, gt_bboxes_ignore, gt_labels, bbox_sampler
-        # assign_result, sampling_result = assign_and_sample(
-        #     anchors, gt_bboxes, gt_bboxes_ignore, None, cfg)
+        # bbox_assigner = build_assigner(cfg.assigner)
+        # assign_result = bbox_assigner.assign(anchors, gt_bboxes, gt_bboxes_ignore, gt_labels)
+        # del bbox_assigner
+        # bbox_sampler = build_sampler(cfg.sampler)
+        # sampling_result = bbox_sampler.sample(assign_result, anchors, gt_bboxes, gt_labels)
+        # del gt_bboxes, gt_bboxes_ignore, gt_labels, bbox_sampler
+        assign_result, sampling_result = assign_and_sample(
+            anchors, gt_bboxes, gt_bboxes_ignore, None, cfg)
     else:
         bbox_assigner = build_assigner(cfg.assigner)
         assign_result = bbox_assigner.assign(anchors, gt_bboxes,
