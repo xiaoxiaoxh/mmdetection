@@ -44,7 +44,8 @@ class AnchorHead(nn.Module):
                      loss_weight=1.0),
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
-                 ignore_missing_bboxes=False):
+                 ignore_missing_bboxes=False,
+                 ignore_topk=1):
         super(AnchorHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -57,6 +58,7 @@ class AnchorHead(nn.Module):
         self.target_means = target_means
         self.target_stds = target_stds
         self.ignore_missing_bboxes = ignore_missing_bboxes
+        self.ignore_topk = ignore_topk
 
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.sampling = loss_cls['type'] not in ['FocalLoss', 'GHMC']
@@ -147,17 +149,20 @@ class AnchorHead(nn.Module):
 
             neg_cat_ids_all = torch.zeros(cls_score.shape[1]).cuda().scatter_(0, neg_category_ids, 1)
             not_exhaustive_cat_ids_all = torch.zeros(cls_score.shape[1]).cuda().scatter_(0, not_exhaustive_ids, 1)
-            pred_cls = torch.argmax(cls_score, dim=1)
+            _, topk_cls = torch.topk(cls_score, k=self.ignore_topk)
             cond1 = labels == 0
-            cond2 = neg_cat_ids_all[pred_cls] == 0
-            cond3 = not_exhaustive_cat_ids_all[pred_cls] == 1
+            cond2 = torch.ones(label_weights.shape[0], dtype=torch.uint8).cuda()
+            cond3 = torch.zeros(label_weights.shape[0], dtype=torch.uint8).cuda()
+            for i in range(self.ignore_topk):
+                cond2 = cond2 * (neg_cat_ids_all[topk_cls[:, i]] == 0)
+                cond3 = cond3 + (not_exhaustive_cat_ids_all[topk_cls[:, i]] == 1)
             condition = cond1 * (cond2 + cond3)
-            del pred_cls, not_exhaustive_cat_ids_all, neg_cat_ids_all, neg_category_ids, not_exhaustive_ids, \
+            del not_exhaustive_cat_ids_all, neg_cat_ids_all, neg_category_ids, not_exhaustive_ids, \
                 cond1, cond2, cond3
             label_weights = torch.where(condition,
                                         torch.zeros_like(label_weights),
                                         label_weights)
-            cls_avg_factor = torch.nonzero(label_weights).shape[0] + num_total_samples
+            cls_avg_factor = max(torch.nonzero(label_weights).shape[0], num_total_samples)
         else:
             cls_avg_factor = num_total_samples
         loss_cls = self.loss_cls(

@@ -35,12 +35,13 @@ model = dict(
             type='FocalLoss',
             use_sigmoid=True,
             gamma=2.0,
-            alpha=0.25,
-            loss_weight=1.0),
+            alpha=0.1,
+            loss_weight=10),
         loss_bbox=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0),
         init_cls_prob=0.01,  # for LVIS
         # samples_per_cls_file='data/LVIS/samples_per_cls.txt',
         ignore_missing_bboxes=True,
+        ignore_topk=5,
     ))
 # training and testing settings
 train_cfg = dict(
@@ -125,7 +126,7 @@ evaluation = dict(interval=1)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/retinanet_r50_fpn_1x_ignore'
+work_dir = './work_dirs/retinanet_r50_fpn_1x_ignore_top5'
 load_from = None
 resume_from = None
 auto_resume = True

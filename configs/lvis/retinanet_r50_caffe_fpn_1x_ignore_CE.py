@@ -38,6 +38,7 @@ model = dict(
         init_cls_prob=0.5,  # for LVIS
         # samples_per_cls_file='data/LVIS/samples_per_cls.txt',
         ignore_missing_bboxes=True,
+        ignore_topk=5,
     ))
 # training and testing settings
 train_cfg = dict(
@@ -47,6 +48,12 @@ train_cfg = dict(
         neg_iou_thr=0.4,
         min_pos_iou=0,
         ignore_iof_thr=-1),
+    # sampler=dict(
+    #     type='RandomSampler',
+    #     num=1024,
+    #     pos_fraction=0.5,
+    #     neg_pos_ub=-1,
+    #     add_gt_as_proposals=False),
     allowed_border=-1,
     pos_weight=-1,
     debug=False)
