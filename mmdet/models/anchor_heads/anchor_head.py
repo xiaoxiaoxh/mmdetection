@@ -155,12 +155,12 @@ class AnchorHead(nn.Module):
             label_weights = torch.where(cond1 * (cond2 + cond3),
                                         torch.zeros_like(label_weights),
                                         label_weights)
-            cls_avg_factor = torch.sum(label_weights)
+            # cls_avg_factor = torch.sum(label_weights)
             del cond1, cond2, cond3
-        else:
-            cls_avg_factor = num_total_samples
+        # else:
+            # cls_avg_factor = num_total_samples
         loss_cls = self.loss_cls(
-            cls_score, labels, label_weights, avg_factor=cls_avg_factor)
+            cls_score, labels, label_weights, avg_factor=num_total_samples)
         # regression loss
         bbox_targets = bbox_targets.reshape(-1, 4)
         bbox_weights = bbox_weights.reshape(-1, 4)
