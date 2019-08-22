@@ -156,7 +156,7 @@ class AnchorHead(nn.Module):
                                         torch.zeros_like(label_weights),
                                         label_weights)
             del cond1, cond2, cond3
-            cls_avg_factor = torch.nonzero(label_weights).shape[0]
+            cls_avg_factor = torch.nonzero(label_weights).shape[0] + 1
         else:
             cls_avg_factor = num_total_samples
         loss_cls = self.loss_cls(
