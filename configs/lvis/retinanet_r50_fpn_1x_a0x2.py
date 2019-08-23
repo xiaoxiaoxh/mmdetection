@@ -35,7 +35,7 @@ model = dict(
             type='FocalLoss',
             use_sigmoid=True,
             gamma=2.0,
-            alpha=0.2,
+            alpha=0.05,
             loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0),
         init_cls_prob=0.01,  # for LVIS
@@ -124,7 +124,7 @@ evaluation = dict(interval=1)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/retinanet_r50_fpn_1x_a0x2'
+work_dir = './work_dirs/retinanet_r50_fpn_1x_a0x05'
 load_from = None
 resume_from = None
 auto_resume = True
