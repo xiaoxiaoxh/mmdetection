@@ -35,7 +35,7 @@ model = dict(
             type='FocalLoss',
             use_sigmoid=True,
             gamma=2.0,
-            alpha=0.1,
+            alpha=0.3,
             loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0),
         init_cls_prob=0.01,  # for LVIS
