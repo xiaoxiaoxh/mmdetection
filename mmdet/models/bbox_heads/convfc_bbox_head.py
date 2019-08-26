@@ -6,6 +6,7 @@ from torch.nn.parameter import Parameter
 from ..registry import HEADS
 from ..utils import ConvModule
 from .bbox_head import BBoxHead
+from mmdet.core import force_fp32
 
 
 class CosNorm_Classifier(nn.Module):
@@ -17,7 +18,9 @@ class CosNorm_Classifier(nn.Module):
         self.use_regular_norm = use_regular_norm
         self.weight = Parameter(torch.Tensor(out_features, in_features))
         self.gamma = Parameter(torch.Tensor(1))
+        self.fp16_enabled = False
 
+    @force_fp32(apply_to=('input', ))
     def forward(self, input, *args):
         if self.use_regular_norm:
             ex = F.normalize(input, 2, dim=1)
