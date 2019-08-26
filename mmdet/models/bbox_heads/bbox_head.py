@@ -31,7 +31,9 @@ class BBoxHead(nn.Module):
                      use_sigmoid=False,
                      loss_weight=1.0),
                  loss_bbox=dict(
-                     type='SmoothL1Loss', beta=1.0, loss_weight=1.0)):
+                     type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
+                 ignore_missing_bboxes=False,
+                 ignore_topk=1):
         super(BBoxHead, self).__init__()
         assert with_cls or with_reg
         self.with_avg_pool = with_avg_pool
@@ -46,6 +48,8 @@ class BBoxHead(nn.Module):
         self.reg_class_agnostic = reg_class_agnostic
         self.fp16_enabled = False
         self.use_cos_cls_fc = False  # not use cosine classifier by default
+        self.ignore_missing_bboxes = ignore_missing_bboxes  # add ignore_missing_bboxes
+        self.ignore_topk = ignore_topk  # init ignore_topk
 
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
@@ -61,6 +65,9 @@ class BBoxHead(nn.Module):
             out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
             self.fc_reg = nn.Linear(in_channels, out_dim_reg)
         self.debug_imgs = None
+
+        self.iter = None  # add current iter
+        self.max_iters = None
 
     def init_weights(self):
         if self.with_cls:
@@ -110,9 +117,38 @@ class BBoxHead(nn.Module):
              label_weights,
              bbox_targets,
              bbox_weights,
-             reduction_override=None):
+             reduction_override=None,
+             img_meta=None,
+             cfg_rcnn=None,
+             **kwargs):
         losses = dict()
         if cls_score is not None:
+            if self.ignore_missing_bboxes and \
+                    'neg_category_ids' in img_meta and \
+                    'not_exhaustive_category_ids' in img_meta:
+
+                with torch.no_grad():
+                    neg_category_ids = torch.Tensor(img_meta['neg_category_ids']).cuda().long() - 1
+                    not_exhaustive_ids = torch.Tensor(img_meta['not_exhaustive_category_ids']).cuda().long() - 1
+
+                    neg_cat_ids_all = torch.zeros(cls_score.shape[1]).cuda().scatter_(0, neg_category_ids, 1)
+                    not_exhaustive_cat_ids_all = torch.zeros(cls_score.shape[1]).cuda().scatter_(0, not_exhaustive_ids,
+                                                                                                 1)
+                    _, topk_cls = torch.topk(cls_score, k=self.ignore_topk)
+                    cond1 = labels == 0
+                    cond2 = torch.ones(label_weights.shape[0], dtype=torch.uint8).cuda()
+                    cond3 = torch.zeros(label_weights.shape[0], dtype=torch.uint8).cuda()
+                    for i in range(self.ignore_topk):
+                        cond2 = cond2 * (neg_cat_ids_all[topk_cls[:, i]] == 0)
+                        cond3 = cond3 + (not_exhaustive_cat_ids_all[topk_cls[:, i]] == 1)
+                        # print(torch.sum(cond1 * (cond2 + cond3)).item())
+                    condition = cond1 * (cond2 + cond3)
+                    del not_exhaustive_cat_ids_all, neg_cat_ids_all, neg_category_ids, not_exhaustive_ids, \
+                        cond1, cond2, cond3, topk_cls
+                    label_weights = torch.where(condition,
+                                                torch.zeros_like(label_weights),
+                                                label_weights)
+
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             if self.use_cos_cls_fc:
                 losses['loss_cls'] = self.loss_cls(

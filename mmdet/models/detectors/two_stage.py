@@ -180,7 +180,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                                                      gt_bboxes, gt_labels,
                                                      self.train_cfg.rcnn)
             loss_bbox = self.bbox_head.loss(cls_score, bbox_pred,
-                                            *bbox_targets)
+                                            *bbox_targets, img_meta=img_meta,
+                                            cfg_rcnn=self.train_cfg.rcnn)  # add img_meta and train_cfg
             losses.update(loss_bbox)
 
         # mask head forward and loss
