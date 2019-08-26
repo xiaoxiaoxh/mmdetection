@@ -1,8 +1,36 @@
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
+from torch.nn.parameter import Parameter
 
 from ..registry import HEADS
 from ..utils import ConvModule
 from .bbox_head import BBoxHead
+
+
+class CosNorm_Classifier(nn.Module):
+    def __init__(self, in_features, out_features, scale=1, use_regular_norm=True):
+        super(CosNorm_Classifier, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.scale = scale
+        self.use_regular_norm = use_regular_norm
+        self.weight = Parameter(torch.Tensor(out_features, in_features))
+        self.gamma = Parameter(torch.Tensor(1))
+
+    def forward(self, input, *args):
+        if self.use_regular_norm:
+            ex = F.normalize(input, 2, dim=1)
+        else:
+            norm_x = torch.norm(input, 2, 1, keepdim=True)
+            ex = (norm_x / (1 + norm_x)) * (input / norm_x)
+        ew = F.normalize(self.weight, 2, dim=1)
+        return torch.mm(self.scale * ex, ew.t()) * self.gamma
+
+    def extra_repr(self):
+        return 'in_features={}, out_features={}, use_regular_norm={}'.format(
+            self.in_features, self.out_features, self.use_regular_norm
+        )
 
 
 @HEADS.register_module
@@ -26,6 +54,8 @@ class ConvFCBBoxHead(BBoxHead):
                  fc_out_channels=1024,
                  conv_cfg=None,
                  norm_cfg=None,
+                 use_cos_cls_fc=False,
+                 cos_cls_fc_gamma=10,
                  *args,
                  **kwargs):
         super(ConvFCBBoxHead, self).__init__(*args, **kwargs)
@@ -47,6 +77,8 @@ class ConvFCBBoxHead(BBoxHead):
         self.fc_out_channels = fc_out_channels
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self.use_cos_cls_fc = use_cos_cls_fc
+        self.cos_cls_fc_gamma = cos_cls_fc_gamma
 
         # add shared convs and fcs
         self.shared_convs, self.shared_fcs, last_layer_dim = \
@@ -74,7 +106,10 @@ class ConvFCBBoxHead(BBoxHead):
         self.relu = nn.ReLU(inplace=True)
         # reconstruct fc_cls and fc_reg since input channels are changed
         if self.with_cls:
-            self.fc_cls = nn.Linear(self.cls_last_dim, self.num_classes)
+            if self.use_cos_cls_fc:
+                self.fc_cls = CosNorm_Classifier(self.cls_last_dim, self.num_classes)
+            else:
+                self.fc_cls = nn.Linear(self.cls_last_dim, self.num_classes)
         if self.with_reg:
             out_dim_reg = (4 if self.reg_class_agnostic else 4 *
                            self.num_classes)

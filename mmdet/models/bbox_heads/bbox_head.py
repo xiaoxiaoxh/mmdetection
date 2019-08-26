@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import (auto_fp16, bbox_target, delta2bbox, force_fp32,
@@ -44,6 +45,7 @@ class BBoxHead(nn.Module):
         self.target_stds = target_stds
         self.reg_class_agnostic = reg_class_agnostic
         self.fp16_enabled = False
+        self.use_cos_cls_fc = False  # not use cosine classifier by default
 
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
@@ -62,8 +64,13 @@ class BBoxHead(nn.Module):
 
     def init_weights(self):
         if self.with_cls:
-            nn.init.normal_(self.fc_cls.weight, 0, 0.01)
-            nn.init.constant_(self.fc_cls.bias, 0)
+            if hasattr(self, 'cos_cls_fc_gamma') and self.use_cos_cls_fc:
+                stdv = 1. / math.sqrt(self.fc_cls.weight.size(1))
+                self.fc_cls.weight.data.uniform_(-stdv, stdv)
+                nn.init.constant_(self.fc_cls.gamma, self.cos_cls_fc_gamma)
+            else:
+                nn.init.normal_(self.fc_cls.weight, 0, 0.01)
+                nn.init.constant_(self.fc_cls.bias, 0)
         if self.with_reg:
             nn.init.normal_(self.fc_reg.weight, 0, 0.001)
             nn.init.constant_(self.fc_reg.bias, 0)
@@ -107,12 +114,23 @@ class BBoxHead(nn.Module):
         losses = dict()
         if cls_score is not None:
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
-            losses['loss_cls'] = self.loss_cls(
-                cls_score,
-                labels,
-                label_weights,
-                avg_factor=avg_factor,
-                reduction_override=reduction_override)
+            if self.use_cos_cls_fc:
+                losses['loss_cls'] = self.loss_cls(
+                    cls_score,
+                    labels,
+                    label_weights,
+                    gamma=self.fc_cls.gamma,
+                    avg_factor=avg_factor,
+                    reduction_override=reduction_override)
+                losses['cls_gamma'] = self.fc_cls.gamma
+                print('loss_cls: {},  gamma: {}'.format(losses['loss_cls'].item(), losses['cls_gamma'].item()))
+            else:
+                losses['loss_cls'] = self.loss_cls(
+                    cls_score,
+                    labels,
+                    label_weights,
+                    avg_factor=avg_factor,
+                    reduction_override=reduction_override)
             losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             pos_inds = labels > 0
