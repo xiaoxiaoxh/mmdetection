@@ -68,6 +68,8 @@ class BBoxHead(nn.Module):
 
         self.iter = None  # add current iter
         self.max_iters = None
+        self.epoch = None
+        self.max_epochs = None
 
     def init_weights(self):
         if self.with_cls:

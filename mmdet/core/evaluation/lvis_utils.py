@@ -20,11 +20,11 @@ def lvis_eval(result_files, result_types, lvis, max_dets=(100, 300, 1000)):
             print('AR@{}\t= {:.4f}'.format(num, ar[i]))
         return
 
+    img_ids = lvis.get_img_ids()
     for res_type in result_types:
         result_file = result_files[res_type]
         assert result_file.endswith('.json')
 
-        img_ids = lvis.get_img_ids()
         iou_type = 'bbox' if res_type == 'proposal' else res_type
         lvisEval = LVISEval(lvis, result_file, iou_type)
         lvisEval.params.img_ids = img_ids

@@ -8,6 +8,7 @@ import torch.distributed as dist
 from mmcv.parallel import collate, scatter
 from mmcv.runner import Hook
 from pycocotools.cocoeval import COCOeval
+from lvis import LVISEval
 from torch.utils.data import Dataset
 
 from mmdet import datasets
@@ -163,6 +164,33 @@ class CocoDistEvalmAPHook(DistEvalHook):
             runner.log_buffer.output['{}_mAP_copypaste'.format(res_type)] = (
                 '{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
                 '{ap[4]:.3f} {ap[5]:.3f}').format(ap=cocoEval.stats[:6])
+        runner.log_buffer.ready = True
+        for res_type in res_types:
+            os.remove(result_files[res_type])
+
+
+class LvisDistEvalmAPHook(DistEvalHook):
+
+    def evaluate(self, runner, results):
+        tmp_file = osp.join(runner.work_dir, 'temp_0')
+        result_files = results2json(self.dataset, results, tmp_file)
+
+        res_types = ['bbox', 'segm'
+                     ] if runner.model.module.with_mask else ['bbox']
+        lvis = self.dataset.lvis
+        img_ids = lvis.get_img_ids()
+        for res_type in res_types:
+            result_file = result_files[res_type]
+            assert result_file.endswith('.json')
+
+            iou_type = res_type
+            lvisEval = LVISEval(lvis, result_file, iou_type)
+            lvisEval.params.img_ids = img_ids
+            lvisEval.run()
+            print('-' * 8 + '{} results'.format(res_type) + '-' * 8)
+            lvisEval.print_results()
+            runner.log_buffer.output[res_type + '_mAP'] = lvisEval.get_results()["AP"]
+
         runner.log_buffer.ready = True
         for res_type in res_types:
             os.remove(result_files[res_type])
