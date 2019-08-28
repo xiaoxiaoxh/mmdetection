@@ -45,10 +45,11 @@ model = dict(
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
         loss_cls=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
+        init_cls_prob=0.01,
         ignore_missing_bboxes=True,
-        ignore_topk=5),
+        ignore_topk=3),
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
@@ -102,7 +103,7 @@ train_cfg = dict(
             add_gt_as_proposals=True),
         mask_size=28,
         pos_weight=-1,
-        ignore_epoch=8,
+        ignore_epoch=1,
         debug=False))
 test_cfg = dict(
     rpn=dict(
@@ -183,7 +184,7 @@ evaluation = dict(interval=1)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_ignore_8ep_top5'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_ignore_top3_sigmoid'
 load_from = None
 resume_from = None
 auto_resume = True
