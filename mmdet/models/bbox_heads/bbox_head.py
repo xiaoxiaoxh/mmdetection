@@ -183,12 +183,11 @@ class BBoxHead(nn.Module):
                 else:
                     top_prob = torch.max(cls_score, dim=1).values.sigmoid()
                     condition = torch.rand(num_samples, device=device) < top_prob
-                    del top_prob, num_samples
                 losses['ignore_neg_samples'] = torch.sum(condition)
                 label_weights = torch.where(condition,
                                             torch.zeros_like(label_weights),
                                             label_weights)
-                del condition
+                # del condition
 
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             if self.use_cos_cls_fc:
