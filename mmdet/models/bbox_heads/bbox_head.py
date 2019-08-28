@@ -149,47 +149,46 @@ class BBoxHead(nn.Module):
                     hasattr(cfg_rcnn, 'ignore_epoch') and \
                     self.epoch + 1 >= cfg_rcnn.ignore_epoch:
 
-                with torch.no_grad():
-                    device = cls_score.get_device()
-                    num_samples = label_weights.shape[0]
-                    if self.use_anno_info:
-                        raise NotImplementedError
-                        # if not isinstance(img_meta, list):
-                        #     img_meta = [img_meta]
-                        # assert img_ids is not None and \
-                        #     'neg_category_ids' in img_meta[0] and \
-                        #     'not_exhaustive_category_ids' in img_meta[0], \
-                        #     'img_ids can not be none'
-                        # img_num = len(img_meta)
-                        # num_classes = cls_score.shape[1]
-                        # neg_cat_ids_all = torch.zeros(img_num, num_classes, device=device, dtype=torch.uint8)
-                        # not_exhaustive_cat_ids_all =
-                        #       torch.zeros(img_num, num_classes, device=device, dtype=torch.uint8)
-                        # for i in range(img_num):
-                        #     neg_cat_ids_all[i, :].scatter_(0, torch.Tensor(
-                        #         img_meta[i]['neg_category_ids']).cuda().long() - 1, 1)
-                        #     not_exhaustive_cat_ids_all[i, :].scatter_(0, torch.Tensor(
-                        #         img_meta[i]['not_exhaustive_category_ids']).cuda().long() - 1, 1)
-                        # cond1 = labels == 0
-                        # cond2 = torch.ones(num_samples, dtype=torch.uint8, device=device)
-                        # cond3 = torch.zeros(num_samples, dtype=torch.uint8, device=device)
-                        #
-                        # topk_prob, topk_cls = torch.topk(cls_score.sigmoid(), k=self.ignore_topk)
-                        # for i in range(self.ignore_topk):
-                        #     cond2 = cond2 * (neg_cat_ids_all[img_ids, topk_cls[:, i]] == 0)
-                        #     cond3 = cond3 + (not_exhaustive_cat_ids_all[img_ids, topk_cls[:, i]] == 1)
-                        # condition = cond1 * (cond2 + cond3)
-                        # del not_exhaustive_cat_ids_all, neg_cat_ids_all, \
-                        #     cond1, cond2, cond3, topk_cls
-                    else:
-                        top_prob = torch.max(cls_score, dim=1).values.sigmoid()
-                        condition = torch.rand(num_samples, device=device) < top_prob
-                        del top_prob, num_samples
-                    losses['ignore_neg_samples'] = torch.sum(condition)
-                    label_weights = torch.where(condition,
-                                                torch.zeros_like(label_weights),
-                                                label_weights)
-                    del condition
+                device = cls_score.get_device()
+                num_samples = label_weights.shape[0]
+                if self.use_anno_info:
+                    raise NotImplementedError
+                    # if not isinstance(img_meta, list):
+                    #     img_meta = [img_meta]
+                    # assert img_ids is not None and \
+                    #     'neg_category_ids' in img_meta[0] and \
+                    #     'not_exhaustive_category_ids' in img_meta[0], \
+                    #     'img_ids can not be none'
+                    # img_num = len(img_meta)
+                    # num_classes = cls_score.shape[1]
+                    # neg_cat_ids_all = torch.zeros(img_num, num_classes, device=device, dtype=torch.uint8)
+                    # not_exhaustive_cat_ids_all =
+                    #       torch.zeros(img_num, num_classes, device=device, dtype=torch.uint8)
+                    # for i in range(img_num):
+                    #     neg_cat_ids_all[i, :].scatter_(0, torch.Tensor(
+                    #         img_meta[i]['neg_category_ids']).cuda().long() - 1, 1)
+                    #     not_exhaustive_cat_ids_all[i, :].scatter_(0, torch.Tensor(
+                    #         img_meta[i]['not_exhaustive_category_ids']).cuda().long() - 1, 1)
+                    # cond1 = labels == 0
+                    # cond2 = torch.ones(num_samples, dtype=torch.uint8, device=device)
+                    # cond3 = torch.zeros(num_samples, dtype=torch.uint8, device=device)
+                    #
+                    # topk_prob, topk_cls = torch.topk(cls_score.sigmoid(), k=self.ignore_topk)
+                    # for i in range(self.ignore_topk):
+                    #     cond2 = cond2 * (neg_cat_ids_all[img_ids, topk_cls[:, i]] == 0)
+                    #     cond3 = cond3 + (not_exhaustive_cat_ids_all[img_ids, topk_cls[:, i]] == 1)
+                    # condition = cond1 * (cond2 + cond3)
+                    # del not_exhaustive_cat_ids_all, neg_cat_ids_all, \
+                    #     cond1, cond2, cond3, topk_cls
+                else:
+                    top_prob = torch.max(cls_score, dim=1).values.sigmoid()
+                    condition = torch.rand(num_samples, device=device) < top_prob
+                    del top_prob, num_samples
+                losses['ignore_neg_samples'] = torch.sum(condition)
+                label_weights = torch.where(condition,
+                                            torch.zeros_like(label_weights),
+                                            label_weights)
+                del condition
 
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             if self.use_cos_cls_fc:
