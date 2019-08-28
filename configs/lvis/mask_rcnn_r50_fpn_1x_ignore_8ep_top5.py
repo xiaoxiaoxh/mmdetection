@@ -45,12 +45,10 @@ model = dict(
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
         loss_cls=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
-        init_cls_prob=0.01,
-        # samples_per_cls_file='data/LVIS/samples_per_cls.txt',
         ignore_missing_bboxes=True,
-        ignore_topk=3),
+        ignore_topk=5),
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
@@ -104,7 +102,7 @@ train_cfg = dict(
             add_gt_as_proposals=True),
         mask_size=28,
         pos_weight=-1,
-        ignore_epoch=1,
+        ignore_epoch=8,
         debug=False))
 test_cfg = dict(
     rpn=dict(
@@ -125,13 +123,12 @@ data_root = 'data/LVIS/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
-    imgs_per_gpu=2,
-    workers_per_gpu=2,
+    imgs_per_gpu=4,
+    workers_per_gpu=4,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'lvis_v0.5_train.json',
         img_prefix=data_root + 'train2017.zip@/',
-        samples_per_cls_file=data_root + 'samples_per_cls.txt',
         img_scale=(1333, 800),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -186,8 +183,8 @@ evaluation = dict(interval=1)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/train_debug'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_ignore_8ep_top5'
 load_from = None
-resume_from = None  # './work_dirs/mask_rcnn_r50_fpn_1x/epoch_7.pth'
+resume_from = None
 auto_resume = True
 workflow = [('train', 1)]
