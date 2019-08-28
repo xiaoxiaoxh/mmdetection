@@ -182,9 +182,10 @@ class BBoxHead(nn.Module):
                     #     cond1, cond2, cond3, topk_cls
                 else:
                     with torch.no_grad():
-                        top_prob = torch.max(cls_score, dim=1).values.sigmoid()
+                        top_prob = torch.max(cls_score[:, 1:], dim=1).values.sigmoid()
                     condition = torch.rand(num_samples, device=device) < top_prob
                 losses['ignore_neg_samples'] = torch.sum(condition)
+                print(losses['ignore_neg_samples'])
                 label_weights = torch.where(condition,
                                             torch.zeros_like(label_weights),
                                             label_weights)
@@ -200,7 +201,7 @@ class BBoxHead(nn.Module):
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
                 losses['cls_gamma'] = self.fc_cls.gamma
-                # print('loss_cls: {},  gamma: {}'.format(losses['loss_cls'].item(), losses['cls_gamma'].item()))
+                print('loss_cls: {},  gamma: {}'.format(losses['loss_cls'].item(), losses['cls_gamma'].item()))
             else:
                 losses['loss_cls'] = self.loss_cls(
                     cls_score,
