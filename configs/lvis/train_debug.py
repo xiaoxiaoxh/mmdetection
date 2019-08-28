@@ -50,7 +50,7 @@ model = dict(
         init_cls_prob=0.01,
         # samples_per_cls_file='data/LVIS/samples_per_cls.txt',
         ignore_missing_bboxes=True,
-        ignore_topk=3),
+        ignore_topk=1),
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),

@@ -49,7 +49,8 @@ model = dict(
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
         init_cls_prob=0.01,
         ignore_missing_bboxes=True,
-        ignore_topk=3),
+        use_anno_info=False,
+        ignore_topk=1),
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
@@ -184,7 +185,7 @@ evaluation = dict(interval=1)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_ignore_top3_sigmoid'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_ignore_top1_sigmoid'
 load_from = None
 resume_from = None
 auto_resume = True
