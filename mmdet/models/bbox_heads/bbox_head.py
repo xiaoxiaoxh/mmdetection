@@ -171,7 +171,7 @@ class BBoxHead(nn.Module):
                     cond3 = torch.zeros(num_samples, dtype=torch.uint8, device=device)
 
                     _, topk_cls = torch.topk(cls_score_new[:, 1:], k=cfg_rcnn.ignore_topk)
-                    top_prob = torch.max(cls_score_new[:, 1:], dim=1).values.sigmoid_()
+                    top_prob = torch.max(cls_score_new[:, 1:], dim=1)[0].sigmoid_()
                     del cls_score_new
                     for i in range(cfg_rcnn.ignore_topk):
                         cond2 = cond2 * (neg_cat_ids_all[img_ids, topk_cls[:, i]] == 0)
@@ -181,18 +181,17 @@ class BBoxHead(nn.Module):
                     del not_exhaustive_cat_ids_all, neg_cat_ids_all, \
                         cond1, cond2, cond3, topk_cls, top_prob
                 else:
-                    top_prob = torch.max(cls_score_new[:, 1:], dim=1).values.sigmoid_()
+                    top_prob = torch.max(cls_score_new[:, 1:], dim=1)[0].sigmoid_()
                     del cls_score_new
                     condition = torch.rand(num_samples, device=device, requires_grad=False) < top_prob
                     del top_prob
-                losses['ignore_neg_samples'] = torch.sum(condition)
+                losses['ignore_neg_samples'] = torch.sum(condition).float()
                 # print('ignore_neg_samples: {}'.format(losses['ignore_neg_samples'].item()))
                 label_weights = label_weights * (1 - condition).float()
                 del condition
                 # time_end = time.time()
                 # print('ignore cost: {:.4f}'.format(time_end - time_start))
 
-            # time_start = time.time()
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             if self.use_cos_cls_fc:
                 losses['loss_cls'] = self.loss_cls(
@@ -212,10 +211,7 @@ class BBoxHead(nn.Module):
                     reduction_override=reduction_override)
             # print('loss_cls: {}'.format(losses['loss_cls'].item()))
             losses['acc'] = accuracy(cls_score, labels)
-            # time_end = time.time()
-            # print('cls loss cost: {:.4f}'.format(time_end - time_start))
         if bbox_pred is not None:
-            # time_start = time.time()
             pos_inds = labels > 0
             if self.reg_class_agnostic:
                 pos_bbox_pred = bbox_pred.view(bbox_pred.size(0), 4)[pos_inds]
@@ -228,8 +224,6 @@ class BBoxHead(nn.Module):
                 bbox_weights[pos_inds],
                 avg_factor=bbox_targets.size(0),
                 reduction_override=reduction_override)
-            # time_end = time.time()
-            # print('bbox loss cost: {:.4f}'.format(time_end - time_start))
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))

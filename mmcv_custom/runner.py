@@ -51,7 +51,6 @@ class Runner(mmcv.runner.Runner):
             self._inner_iter = i
             self.model.module.bbox_head.iter = self.iter
             self.model.module.bbox_head.epoch = self.epoch
-            # time_start = time.time()
             self.call_hook('before_train_iter')
             try:
                 outputs = self.batch_processor(
@@ -68,12 +67,10 @@ class Runner(mmcv.runner.Runner):
             except RuntimeError as e:
                 if 'out of memory' in str(e):
                     print('WARNING: CUDA ran out of memory, skip to next batch')
-                    # torch.cuda.empty_cache()
-                    # self.optimizer.zero_grad()
                     os.system('ps -ef | grep python | grep -v grep | awk \'{print "kill -9 "$2}\' | sh')
+                else:
+                    raise e
             self._iter += 1
-            # time_end = time.time()
-            # print('iter time: {:.4f}'.format(time_end - time_start))
 
         self.call_hook('after_train_epoch')
         self._epoch += 1
