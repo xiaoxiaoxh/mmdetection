@@ -147,6 +147,7 @@ class BBoxHead(nn.Module):
                 # time_start = time.time()
                 device = cls_score.get_device()
                 num_samples = label_weights.shape[0]
+                cls_score_new = cls_score.detach()
                 if cfg_rcnn.use_anno_info:
                     if not isinstance(img_meta, list):
                         img_meta = [img_meta]
@@ -167,9 +168,10 @@ class BBoxHead(nn.Module):
                     cond1 = labels == 0
                     cond2 = torch.ones(num_samples, dtype=torch.uint8, device=device)
                     cond3 = torch.zeros(num_samples, dtype=torch.uint8, device=device)
-                    with torch.no_grad():
-                        _, topk_cls = torch.topk(cls_score[:, 1:], k=cfg_rcnn.ignore_topk)
-                        top_prob = torch.max(cls_score[:, 1:], dim=1).values.sigmoid_()
+
+                    _, topk_cls = torch.topk(cls_score_new[:, 1:], k=cfg_rcnn.ignore_topk)
+                    top_prob = torch.max(cls_score_new[:, 1:], dim=1).values.sigmoid_()
+                    del cls_score_new
                     for i in range(cfg_rcnn.ignore_topk):
                         cond2 = cond2 * (neg_cat_ids_all[img_ids, topk_cls[:, i]] == 0)
                         cond3 = cond3 + (not_exhaustive_cat_ids_all[img_ids, topk_cls[:, i]] == 1)
@@ -178,14 +180,14 @@ class BBoxHead(nn.Module):
                     del not_exhaustive_cat_ids_all, neg_cat_ids_all, \
                         cond1, cond2, cond3, topk_cls, top_prob
                 else:
-                    with torch.no_grad():
-                        top_prob = torch.max(cls_score[:, 1:], dim=1).values.sigmoid_()
-                    condition = torch.rand(num_samples, device=device) < top_prob
-                    # del top_prob
+                    top_prob = torch.max(cls_score_new[:, 1:], dim=1).values.sigmoid_()
+                    del cls_score_new
+                    condition = torch.rand(num_samples, device=device, requires_grad =False) < top_prob
+                    del top_prob
                 losses['ignore_neg_samples'] = torch.sum(condition)
                 # print('ignore_neg_samples: {}'.format(losses['ignore_neg_samples'].item()))
                 label_weights = label_weights * (1 - condition).float()
-                # del condition
+                del condition
                 # time_end = time.time()
                 # print('ignore cost: {:.4f}'.format(time_end - time_start))
 

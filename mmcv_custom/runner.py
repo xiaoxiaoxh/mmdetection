@@ -3,6 +3,7 @@ import os.path as osp
 import mmcv
 from mmcv.runner.utils import obj_from_dict
 import torch
+import time
 from .parameters import parameters
 from mmcv.runner.checkpoint import save_checkpoint
 
@@ -50,6 +51,7 @@ class Runner(mmcv.runner.Runner):
             self._inner_iter = i
             self.model.module.bbox_head.iter = self.iter
             self.model.module.bbox_head.epoch = self.epoch
+            # time_start = time.time()
             self.call_hook('before_train_iter')
             try:
                 outputs = self.batch_processor(
@@ -70,6 +72,8 @@ class Runner(mmcv.runner.Runner):
                     # self.optimizer.zero_grad()
                     os.system('ps -ef | grep python | grep -v grep | awk \'{print "kill -9 "$2}\' | sh')
             self._iter += 1
+            # time_end = time.time()
+            # print('iter time: {:.4f}'.format(time_end - time_start))
 
         self.call_hook('after_train_epoch')
         self._epoch += 1
