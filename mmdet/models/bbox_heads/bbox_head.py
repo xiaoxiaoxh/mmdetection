@@ -188,8 +188,7 @@ class BBoxHead(nn.Module):
                 # del condition
                 # time_end = time.time()
                 # print('ignore cost: {:.4f}'.format(time_end - time_start))
-            else:
-                print(cfg_rcnn.ignore_missing_bboxes, 'ignore_epoch' in cfg_rcnn, self.epoch + 1 >= cfg_rcnn.ignore_epoch)
+
             # time_start = time.time()
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             if self.use_cos_cls_fc:
@@ -208,7 +207,7 @@ class BBoxHead(nn.Module):
                     label_weights,
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
-            print('loss_cls: {}'.format(losses['loss_cls'].item()))
+            # print('loss_cls: {}'.format(losses['loss_cls'].item()))
             losses['acc'] = accuracy(cls_score, labels)
             # time_end = time.time()
             # print('cls loss cost: {:.4f}'.format(time_end - time_start))
