@@ -201,7 +201,7 @@ class BBoxHead(nn.Module):
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
                 losses['cls_gamma'] = self.fc_cls.gamma
-                print('loss_cls: {},  gamma: {}'.format(losses['loss_cls'].item(), losses['cls_gamma'].item()))
+                # print('loss_cls: {},  gamma: {}'.format(losses['loss_cls'].item(), losses['cls_gamma'].item()))
             else:
                 losses['loss_cls'] = self.loss_cls(
                     cls_score,
