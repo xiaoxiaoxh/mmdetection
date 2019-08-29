@@ -140,7 +140,8 @@ class BBoxHead(nn.Module):
              **kwargs):
         losses = dict()
         if cls_score is not None:
-            if cfg_rcnn.ignore_missing_bboxes and \
+            if 'ignore_missing_bboxes' in cfg_rcnn and \
+                    cfg_rcnn.ignore_missing_bboxes and \
                     'ignore_epoch' in cfg_rcnn and \
                     self.epoch + 1 >= cfg_rcnn.ignore_epoch:
 
@@ -182,7 +183,7 @@ class BBoxHead(nn.Module):
                 else:
                     top_prob = torch.max(cls_score_new[:, 1:], dim=1).values.sigmoid_()
                     del cls_score_new
-                    condition = torch.rand(num_samples, device=device, requires_grad =False) < top_prob
+                    condition = torch.rand(num_samples, device=device, requires_grad=False) < top_prob
                     del top_prob
                 losses['ignore_neg_samples'] = torch.sum(condition)
                 # print('ignore_neg_samples: {}'.format(losses['ignore_neg_samples'].item()))
