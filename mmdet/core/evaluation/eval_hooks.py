@@ -172,6 +172,7 @@ class CocoDistEvalmAPHook(DistEvalHook):
 class LvisDistEvalmAPHook(DistEvalHook):
 
     def evaluate(self, runner, results):
+        print('Current work dir: {}'.format(runner.work_dir))
         tmp_file = osp.join(runner.work_dir, 'temp_0')
         result_files = results2json(self.dataset, results, tmp_file)
 

@@ -178,8 +178,8 @@ class BBoxHead(nn.Module):
                     del not_exhaustive_cat_ids_all, neg_cat_ids_all, \
                         cond1, cond2, cond3, topk_cls, top_prob
                 else:
-                    # with torch.no_grad():
-                    top_prob = torch.max(cls_score[:, 1:], dim=1).values.sigmoid_()
+                    with torch.no_grad():
+                        top_prob = torch.max(cls_score[:, 1:], dim=1).values.sigmoid_()
                     condition = torch.rand(num_samples, device=device) < top_prob
                     # del top_prob
                 losses['ignore_neg_samples'] = torch.sum(condition)
