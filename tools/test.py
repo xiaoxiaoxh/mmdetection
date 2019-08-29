@@ -180,7 +180,7 @@ def main():
     data_loader = build_dataloader(
         dataset,
         imgs_per_gpu=1,
-        workers_per_gpu=cfg.data.workers_per_gpu,
+        workers_per_gpu=1,
         dist=distributed,
         shuffle=False)
 
