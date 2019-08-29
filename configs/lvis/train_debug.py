@@ -47,7 +47,7 @@ model = dict(
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
-        init_cls_prob=0.001,
+        init_cls_prob=0.0001,
         # samples_per_cls_file='data/LVIS/samples_per_cls.txt',
         ),
     mask_roi_extractor=dict(
@@ -103,7 +103,7 @@ train_cfg = dict(
             add_gt_as_proposals=True),
         mask_size=28,
         pos_weight=-1,
-        use_anno_info=True,  # for Lvis only
+        use_anno_info=False,  # for Lvis only
         ignore_epoch=1,  # start ignoring from n-th epoch
         ignore_missing_bboxes=True,  # ignore negative samples
         ignore_topk=5,  # ignore top k cls score with anno info

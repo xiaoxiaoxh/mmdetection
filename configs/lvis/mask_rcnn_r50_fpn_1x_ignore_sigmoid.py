@@ -47,7 +47,7 @@ model = dict(
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
-        init_cls_prob=0.001,
+        init_cls_prob=0.0001,
         # samples_per_cls_file='data/LVIS/samples_per_cls.txt',
         ),
     mask_roi_extractor=dict(
@@ -106,7 +106,7 @@ train_cfg = dict(
         use_anno_info=False,  # for Lvis only
         ignore_epoch=1,  # start ignoring from n-th epoch
         ignore_missing_bboxes=True,  # ignore negative samples
-        ignore_topk=5,  # ignore top k cls score with anno info
+        # ignore_topk=5,  # ignore top k cls score with anno info
         debug=False))
 test_cfg = dict(
     rpn=dict(
@@ -187,7 +187,7 @@ evaluation = dict(interval=1)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_ignore_top5_sigmoid'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_ignore_sigmoid'
 load_from = None
 resume_from = None
 auto_resume = True
