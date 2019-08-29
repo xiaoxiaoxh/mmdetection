@@ -36,19 +36,18 @@ class DistEvalHook(Hook):
         results = [None for _ in range(len(self.dataset))]
         if runner.rank == 0:
             prog_bar = mmcv.ProgressBar(len(self.dataset))
-        imgs_per_gpu = 6
         # TODO: support multi-imgs per gpu
-        for idx in range(imgs_per_gpu * runner.rank, len(self.dataset), imgs_per_gpu * runner.world_size):
-            data = self.dataset[idx:idx+imgs_per_gpu]
+        for idx in range(runner.rank, len(self.dataset), runner.world_size):
+            data = self.dataset[idx]
             data_gpu = scatter(
-                collate([data], samples_per_gpu=imgs_per_gpu),
+                collate([data], samples_per_gpu=1),
                 [torch.cuda.current_device()])[0]
 
             # compute output
             with torch.no_grad():
                 result = runner.model(
                     return_loss=False, rescale=True, **data_gpu)
-            results[idx:idx+imgs_per_gpu] = result
+            results[idx] = result
 
             batch_size = runner.world_size
             if runner.rank == 0:
