@@ -47,7 +47,7 @@ model = dict(
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
-        init_cls_prob=0.0001,
+        init_cls_prob=0.001,
         # samples_per_cls_file='data/LVIS/samples_per_cls.txt',
         ),
     mask_roi_extractor=dict(
