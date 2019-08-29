@@ -1,5 +1,5 @@
 # fp16 settings
-fp16 = dict(loss_scale=512.)
+# fp16 = dict(loss_scale=512.)
 
 # model settings
 model = dict(
@@ -48,9 +48,8 @@ model = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
         init_cls_prob=0.01,
-        ignore_missing_bboxes=True,
-        use_anno_info=False,
-        ignore_topk=1),
+        # samples_per_cls_file='data/LVIS/samples_per_cls.txt',
+        ),
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
@@ -104,7 +103,10 @@ train_cfg = dict(
             add_gt_as_proposals=True),
         mask_size=28,
         pos_weight=-1,
-        ignore_epoch=1,
+        use_anno_info=True,  # for Lvis only
+        ignore_epoch=1,  # start ignoring from n-th epoch
+        ignore_missing_bboxes=True,  # ignore negative samples
+        ignore_topk=3,  # ignore top k cls score with anno info
         debug=False))
 test_cfg = dict(
     rpn=dict(
@@ -185,7 +187,7 @@ evaluation = dict(interval=1)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_ignore_top1_sigmoid'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_ignore_top3_sigmoid_anno'
 load_from = None
 resume_from = None
 auto_resume = True
