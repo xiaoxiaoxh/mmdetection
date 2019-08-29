@@ -92,6 +92,7 @@ class BBoxHead(nn.Module):
                 if self.init_cls_prob is not None:
                     bias_cls = bias_init_with_prob(self.init_cls_prob)
                     nn.init.constant_(self.fc_cls.bias, bias_cls)
+                    self.fc_cls.bias.data[0] = bias_init_with_prob(0.75)
                 else:
                     nn.init.constant_(self.fc_cls.bias, 0)
         if self.with_reg:
