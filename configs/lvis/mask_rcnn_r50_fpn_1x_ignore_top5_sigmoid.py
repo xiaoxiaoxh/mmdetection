@@ -103,7 +103,7 @@ train_cfg = dict(
             add_gt_as_proposals=True),
         mask_size=28,
         pos_weight=-1,
-        use_anno_info=True,  # for Lvis only
+        use_anno_info=False,  # for Lvis only
         ignore_epoch=1,  # start ignoring from n-th epoch
         ignore_missing_bboxes=True,  # ignore negative samples
         ignore_topk=5,  # ignore top k cls score with anno info
@@ -187,7 +187,7 @@ evaluation = dict(interval=1)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_ignore_top5_sigmoid_anno'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_ignore_top5_sigmoid'
 load_from = None
 resume_from = None
 auto_resume = True
