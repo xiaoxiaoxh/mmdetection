@@ -210,7 +210,7 @@ class BBoxHead(nn.Module):
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
             # print('loss_cls: {}'.format(losses['loss_cls'].item()))
-            losses['acc'] = accuracy(cls_score, labels)
+            losses['acc'] = accuracy(cls_score[label_weights > 0, :], labels[label_weights > 0])
         if bbox_pred is not None:
             pos_inds = labels > 0
             if self.reg_class_agnostic:
