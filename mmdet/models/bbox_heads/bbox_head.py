@@ -181,7 +181,7 @@ class BBoxHead(nn.Module):
                     condition = torch.rand(num_samples, device=device) < top_prob
                     del top_prob
                 losses['ignore_neg_samples'] = torch.sum(condition)
-                print('ignore_neg_samples: {}'.format(losses['ignore_neg_samples'].item()))
+                # print('ignore_neg_samples: {}'.format(losses['ignore_neg_samples'].item()))
                 label_weights = label_weights * (1 - condition).float()
                 del condition
 
@@ -202,7 +202,7 @@ class BBoxHead(nn.Module):
                     label_weights,
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
-            print('loss_cls: {}'.format(losses['loss_cls'].item()))
+            # print('loss_cls: {}'.format(losses['loss_cls'].item()))
             losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             pos_inds = labels > 0

@@ -106,7 +106,7 @@ train_cfg = dict(
         use_anno_info=True,  # for Lvis only
         ignore_epoch=1,  # start ignoring from n-th epoch
         ignore_missing_bboxes=True,  # ignore negative samples
-        ignore_topk=3,  # ignore top k cls score with anno info
+        ignore_topk=5,  # ignore top k cls score with anno info
         debug=False))
 test_cfg = dict(
     rpn=dict(
@@ -187,7 +187,7 @@ evaluation = dict(interval=1)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_ignore_top3_sigmoid_anno'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_ignore_top5_sigmoid_anno'
 load_from = None
 resume_from = None
 auto_resume = True
