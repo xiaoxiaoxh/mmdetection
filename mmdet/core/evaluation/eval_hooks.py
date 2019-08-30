@@ -36,7 +36,7 @@ class DistEvalHook(Hook):
         results = [None for _ in range(len(self.dataset))]
         if runner.rank == 0:
             prog_bar = mmcv.ProgressBar(len(self.dataset))
-        # TODO: support multi-imgs per gpu
+        # TODO: support multi imgs per gpu
         for idx in range(runner.rank, len(self.dataset), runner.world_size):
             data = self.dataset[idx]
             data_gpu = scatter(
