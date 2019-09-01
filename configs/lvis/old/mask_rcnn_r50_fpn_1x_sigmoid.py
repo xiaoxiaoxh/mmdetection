@@ -1,5 +1,5 @@
 # fp16 settings
-# fp16 = dict(loss_scale=512.)
+fp16 = dict(loss_scale=512.)
 
 # model settings
 model = dict(
@@ -45,7 +45,8 @@ model = dict(
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
         loss_cls=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        init_cls_prob=0.001,
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
@@ -98,12 +99,6 @@ train_cfg = dict(
             pos_fraction=0.25,
             neg_pos_ub=-1,
             add_gt_as_proposals=True),
-        soft_sampling=dict(
-            type='OverlapSoftSampling',
-            a=0.25,
-            b=50,
-            c=20,
-        ),
         mask_size=28,
         pos_weight=-1,
         debug=False))
@@ -181,13 +176,13 @@ log_config = dict(
         dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
-evaluation = dict(interval=3)
+evaluation = dict(interval=1)
 # runtime settings
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/data/home/hanxue/mmdetection-debug/work_dirs/train_debug'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_sigmoid'
 load_from = None
 resume_from = None
-auto_resume = False
+auto_resume = True
 workflow = [('train', 1)]

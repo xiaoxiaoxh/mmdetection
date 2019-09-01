@@ -1,5 +1,5 @@
 # fp16 settings
-fp16 = dict(loss_scale=512.)
+# fp16 = dict(loss_scale=512.)
 
 # model settings
 model = dict(
@@ -45,8 +45,7 @@ model = dict(
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
         loss_cls=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        init_cls_prob=0.001,
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
@@ -74,9 +73,9 @@ train_cfg = dict(
             type='RandomSampler',
             num=256,
             pos_fraction=0.5,
-            neg_pos_ub=-1,
+            neg_pos_ub=5,  # change from -1 to 5
             add_gt_as_proposals=False),
-        allowed_border=0,
+        allowed_border=-1,  # change from 0 to -1
         pos_weight=-1,
         debug=False),
     rpn_proposal=dict(
@@ -94,11 +93,16 @@ train_cfg = dict(
             min_pos_iou=0.5,
             ignore_iof_thr=-1),
         sampler=dict(
-            type='RandomSampler',
+            type='CombinedSampler',
             num=512,
             pos_fraction=0.25,
-            neg_pos_ub=-1,
-            add_gt_as_proposals=True),
+            add_gt_as_proposals=True,
+            pos_sampler=dict(type='InstanceBalancedPosSampler'),
+            neg_sampler=dict(
+                type='IoUBalancedNegSampler',
+                floor_thr=-1,
+                floor_fraction=0,
+                num_bins=3)),
         mask_size=28,
         pos_weight=-1,
         debug=False))
@@ -111,7 +115,7 @@ test_cfg = dict(
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
-        score_thr=0.05,
+        score_thr=0.01,
         nms=dict(type='nms', iou_thr=0.5),
         max_per_img=100,
         mask_thr_binary=0.5))
@@ -176,12 +180,12 @@ log_config = dict(
         dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
-evaluation = dict(interval=1)
+evaluation = dict(interval=3)
 # runtime settings
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_sigmoid'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_iou-sampler'
 load_from = None
 resume_from = None
 auto_resume = True

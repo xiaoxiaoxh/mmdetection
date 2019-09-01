@@ -135,21 +135,21 @@ class BBoxHead(nn.Module):
              bbox_weights,
              reduction_override=None,
              img_meta=None,
-             cfg_rcnn=None,
+             rcnn_train_cfg=None,
              img_ids=None,
              **kwargs):
         losses = dict()
         if cls_score is not None:
-            if 'ignore_missing_bboxes' in cfg_rcnn and \
-                    cfg_rcnn.ignore_missing_bboxes and \
-                    'ignore_epoch' in cfg_rcnn and \
-                    self.epoch + 1 >= cfg_rcnn.ignore_epoch:
+            if 'ignore_missing_bboxes' in rcnn_train_cfg and \
+                    rcnn_train_cfg.ignore_missing_bboxes and \
+                    'ignore_epoch' in rcnn_train_cfg and \
+                    self.epoch + 1 >= rcnn_train_cfg.ignore_epoch:
 
                 # time_start = time.time()
                 device = cls_score.get_device()
                 num_samples = label_weights.shape[0]
                 cls_score_new = cls_score.detach()
-                if cfg_rcnn.use_anno_info:
+                if rcnn_train_cfg.use_anno_info:
                     if not isinstance(img_meta, list):
                         img_meta = [img_meta]
                     assert img_ids is not None and \
@@ -170,10 +170,10 @@ class BBoxHead(nn.Module):
                     cond2 = torch.ones(num_samples, dtype=torch.uint8, device=device)
                     cond3 = torch.zeros(num_samples, dtype=torch.uint8, device=device)
 
-                    _, topk_cls = torch.topk(cls_score_new[:, 1:], k=cfg_rcnn.ignore_topk)
+                    _, topk_cls = torch.topk(cls_score_new[:, 1:], k=rcnn_train_cfg.ignore_topk)
                     top_prob = torch.max(cls_score_new[:, 1:], dim=1)[0].sigmoid_()
                     del cls_score_new
-                    for i in range(cfg_rcnn.ignore_topk):
+                    for i in range(rcnn_train_cfg.ignore_topk):
                         cond2 = cond2 * (neg_cat_ids_all[img_ids, topk_cls[:, i]] == 0)
                         cond3 = cond3 + (not_exhaustive_cat_ids_all[img_ids, topk_cls[:, i]] == 1)
                     random_mask = torch.rand(num_samples, device=device) < top_prob

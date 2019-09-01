@@ -153,7 +153,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             if gt_bboxes_ignore is None:
                 gt_bboxes_ignore = [None for _ in range(num_imgs)]
             sampling_results = []
-            sampling_img_id_list = []
+            sampling_img_id_list = []  # add sampling_img_id_list
             for i in range(num_imgs):
                 assign_result = bbox_assigner.assign(proposal_list[i],
                                                      gt_bboxes[i],
@@ -165,6 +165,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                     gt_bboxes[i],
                     gt_labels[i],
                     feats=[lvl_feat[i][None] for lvl_feat in x])
+                # add sampling_img_id_list
                 sampling_img_id_list.append(torch.ones_like(sampling_result.bboxes[:, 0]).long() * i)
                 sampling_results.append(sampling_result)
 
@@ -182,9 +183,11 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                                                      self.train_cfg.rcnn)
             sampling_img_ids = torch.cat(sampling_img_id_list, dim=0)  # add sampling_img_ids
             # add img_meta and train_cfg and sampling_img_ids
-            loss_bbox = self.bbox_head.loss(cls_score, bbox_pred,
-                                            *bbox_targets, img_meta=img_meta,
-                                            cfg_rcnn=self.train_cfg.rcnn,
+            loss_bbox = self.bbox_head.loss(cls_score,
+                                            bbox_pred,
+                                            *bbox_targets,
+                                            img_meta=img_meta,
+                                            rcnn_train_cfg=self.train_cfg.rcnn,
                                             img_ids=sampling_img_ids)
             losses.update(loss_bbox)
 
