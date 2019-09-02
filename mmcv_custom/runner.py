@@ -66,7 +66,7 @@ class Runner(mmcv.runner.Runner):
                 self.call_hook('after_train_iter')
             except RuntimeError as e:
                 if 'out of memory' in str(e):
-                    print('WARNING: CUDA ran out of memory, skip to next batch')
+                    print('WARNING: CUDA ran out of memory!')
                     os.system('ps -ef | grep python | grep -v grep | awk \'{print "kill -9 "$2}\' | sh')
                 else:
                     raise e
