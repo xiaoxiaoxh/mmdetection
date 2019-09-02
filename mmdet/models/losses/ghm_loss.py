@@ -31,7 +31,7 @@ class GHMC(nn.Module):
         loss_weight (float): The weight of the total GHM-C loss.
     """
 
-    def __init__(self, bins=10, momentum=0, use_sigmoid=True, loss_weight=1.0):
+    def __init__(self, bins=10, momentum=0, use_sigmoid=True, loss_weight=1.0, **kwargs):
         super(GHMC, self).__init__()
         self.bins = bins
         self.momentum = momentum
@@ -107,7 +107,7 @@ class GHMR(nn.Module):
         loss_weight (float): The weight of the total GHM-R loss.
     """
 
-    def __init__(self, mu=0.02, bins=10, momentum=0, loss_weight=1.0):
+    def __init__(self, mu=0.02, bins=10, momentum=0, loss_weight=1.0, **kwargs):
         super(GHMR, self).__init__()
         self.mu = mu
         self.bins = bins
