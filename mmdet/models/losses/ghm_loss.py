@@ -107,7 +107,6 @@ class GHMC(nn.Module):
         return loss * self.loss_weight
 
 
-# TODO: code refactoring to make it consistent with other losses
 @LOSSES.register_module
 class GHMR(nn.Module):
     """GHM Regression Loss.
@@ -165,6 +164,8 @@ class GHMR(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
+        if len(weight.shape) == 1:
+            weight = weight.unsqueeze(1)
         mu = self.mu
         edges = self.edges
         mmt = self.momentum
