@@ -173,7 +173,9 @@ class FCOSHead(nn.Module):
         pos_inds = flatten_labels.nonzero().reshape(-1)
         num_pos = len(pos_inds)
         loss_cls = self.loss_cls(
-            flatten_cls_scores, flatten_labels,
+            flatten_cls_scores,
+            flatten_labels,
+            weight=flatten_labels.new_ones(flatten_labels.size()),
             avg_factor=num_pos + num_imgs)  # avoid num_pos is 0
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
