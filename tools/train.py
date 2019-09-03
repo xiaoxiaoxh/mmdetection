@@ -47,9 +47,9 @@ def parse_args():
         action='store_true',
         help='automatically scale lr with the number of gpus and imgs per gpu')
     parser.add_argument(
-        '--autoscale-bs',
+        '--scale-bs',
         action='store_true',
-        help='automatically scale imgs per gpu')
+        help='scale imgs per gpu by 1/2')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -81,9 +81,9 @@ def main():
     # update gpu num
     if dist.is_initialized():
         cfg.gpus = dist.get_world_size()
-    if args.autoscale_bs:
-        cfg.data.imgs_per_gpu = cfg.data.imgs_per_gpu / 2
-        cfg.data.workers_per_gpu = cfg.data.workers_per_gpu / 2
+    if args.scale_bs:
+        cfg.data.imgs_per_gpu = int(cfg.data.imgs_per_gpu / 2)
+        cfg.data.workers_per_gpu = int(cfg.data.workers_per_gpu / 2)
     if args.autoscale_lr:
         # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
         cfg.optimizer['lr'] = cfg.optimizer['lr'] * cfg.gpus / 8 * cfg.data.imgs_per_gpu / 2
