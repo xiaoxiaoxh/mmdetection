@@ -1,5 +1,5 @@
 # fp16 settings
-# fp16 = dict(loss_scale=512.)
+fp16 = dict(loss_scale=512.)
 
 # model settings
 model = dict(
@@ -126,7 +126,6 @@ log_config = dict(
 evaluation = dict(interval=1)
 # runtime settings
 total_epochs = 12
-device_ids = range(4)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/fcos_r50_fpn_1x_ghm'
