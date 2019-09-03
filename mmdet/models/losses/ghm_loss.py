@@ -55,7 +55,6 @@ class GHMC(nn.Module):
                 pred,
                 target,
                 weight,
-                avg_factor=None,
                 reduction_override=None,
                 **kwargs):
         """Calculate the GHM-C loss.
@@ -104,7 +103,7 @@ class GHMC(nn.Module):
 
         loss = F.binary_cross_entropy_with_logits(
             pred, target, ghm_weights, reduction='none')
-        loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
+        loss = weight_reduce_loss(loss, weight, reduction, avg_factor=tot)
         return loss * self.loss_weight
 
 
