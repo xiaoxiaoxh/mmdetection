@@ -39,7 +39,7 @@ model = dict(
             mu=0.02,
             bins=10,
             momentum=0.7,
-            loss_weight=0.1),
+            loss_weight=1.0),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         # samples_per_cls_file='data/LVIS/samples_per_cls.txt',
