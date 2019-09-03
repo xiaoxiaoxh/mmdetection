@@ -119,7 +119,7 @@ class GHMR(nn.Module):
         self.loss_weight = loss_weight
 
     # TODO: support reduction parameter
-    def forward(self, pred, target, label_weight, avg_factor=None):
+    def forward(self, pred, target, label_weight, avg_factor=None, **kwargs):
         """Calculate the GHM-R loss.
 
         Args:
