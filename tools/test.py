@@ -19,6 +19,7 @@ from mmdet.apis import init_dist
 from mmdet.core import lvis_eval, results2json, wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
+from tools.analyze_result import analyze
 
 
 def single_gpu_test(model, data_loader, show=False, show_gt=False, work_dir=None):
@@ -131,6 +132,7 @@ def parse_args():
         nargs='+',
         choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
         help='eval types')
+    parser.add_argument('--analyze', action='store_true', help='analyze checkpoint')
     parser.add_argument('--show', action='store_true', help='show results')
     parser.add_argument('--show-gt', action='store_true', help='show ground truth')
     parser.add_argument('--tmpdir', help='tmp dir for writing some results')
@@ -196,6 +198,16 @@ def main():
         model.CLASSES = checkpoint['meta']['CLASSES']
     else:
         model.CLASSES = dataset.CLASSES
+
+    if args.analyze:
+        result = dict()
+        result['fc_weight'] = model.bbox_head.fc_cls.weight.data
+        samples_per_cls_file = cfg.data.train.samples_per_cls_file
+        if osp.exists(samples_per_cls_file):  # add samples_per_cls_file
+            with open(samples_per_cls_file, 'r') as f:
+                samples_per_cls = torch.Tensor([int(line.strip()) for line in f.readlines()])
+        analyze(result, samples_per_cls)
+        exit()
 
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
