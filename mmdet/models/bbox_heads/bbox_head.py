@@ -140,75 +140,59 @@ class BBoxHead(nn.Module):
              **kwargs):
         losses = dict()
         if cls_score is not None:
-            if 'ignore_missing_bboxes' in rcnn_train_cfg and \
-                    rcnn_train_cfg.ignore_missing_bboxes and \
-                    'ignore_epoch' in rcnn_train_cfg and \
-                    self.epoch + 1 >= rcnn_train_cfg.ignore_epoch:
+            if 'use_anno_info' in rcnn_train_cfg and \
+                    rcnn_train_cfg.use_anno_info:
 
-                # time_start = time.time()
                 device = cls_score.get_device()
-                num_samples = label_weights.shape[0]
-                cls_score_new = cls_score.detach()
-                if rcnn_train_cfg.use_anno_info:
-                    if not isinstance(img_meta, list):
-                        img_meta = [img_meta]
-                    assert img_ids is not None and \
-                        'neg_category_ids' in img_meta[0] and \
-                        'not_exhaustive_category_ids' in img_meta[0], \
-                        'img_ids can not be none'
-                    img_num = len(img_meta)
-                    num_classes = cls_score.shape[1]
-                    neg_cat_ids_all = torch.zeros(img_num, num_classes, device=device, dtype=torch.uint8)
-                    not_exhaustive_cat_ids_all = \
-                          torch.zeros(img_num, num_classes, device=device, dtype=torch.uint8)
-                    for i in range(img_num):
-                        neg_cat_ids_all[i, :].scatter_(0, torch.Tensor(
-                            img_meta[i]['neg_category_ids']).cuda().long() - 1, 1)
-                        not_exhaustive_cat_ids_all[i, :].scatter_(0, torch.Tensor(
-                            img_meta[i]['not_exhaustive_category_ids']).cuda().long() - 1, 1)
-                    cond1 = labels == 0
-                    cond2 = torch.ones(num_samples, dtype=torch.uint8, device=device)
-                    cond3 = torch.zeros(num_samples, dtype=torch.uint8, device=device)
-
-                    _, topk_cls = torch.topk(cls_score_new[:, 1:], k=rcnn_train_cfg.ignore_topk)
-                    top_prob = torch.max(cls_score_new[:, 1:], dim=1)[0].sigmoid_()
-                    del cls_score_new
-                    for i in range(rcnn_train_cfg.ignore_topk):
-                        cond2 = cond2 * (neg_cat_ids_all[img_ids, topk_cls[:, i]] == 0)
-                        cond3 = cond3 + (not_exhaustive_cat_ids_all[img_ids, topk_cls[:, i]] == 1)
-                    random_mask = torch.rand(num_samples, device=device) < top_prob
-                    condition = cond1 * (cond2 + cond3) * random_mask
-                    del not_exhaustive_cat_ids_all, neg_cat_ids_all, \
-                        cond1, cond2, cond3, topk_cls, top_prob
-                else:
-                    top_prob = torch.max(cls_score_new[:, 1:], dim=1)[0].sigmoid_()
-                    del cls_score_new
-                    condition = torch.rand(num_samples, device=device, requires_grad=False) < top_prob
-                    del top_prob
-                losses['ignore_neg_samples'] = torch.sum(condition).float()
-                # print('ignore_neg_samples: {}'.format(losses['ignore_neg_samples'].item()))
-                label_weights = label_weights * (1 - condition).float()
-                del condition
-                # time_end = time.time()
-                # print('ignore cost: {:.4f}'.format(time_end - time_start))
-
-            avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
-            if self.use_cos_cls_fc:
-                losses['loss_cls'] = self.loss_cls(
-                    cls_score,
-                    labels,
-                    label_weights,
-                    gamma=self.fc_cls.gamma,
-                    avg_factor=avg_factor,
-                    reduction_override=reduction_override)
-                losses['cls_gamma'] = self.fc_cls.gamma
+                num_classes = cls_score.shape[1]
+                if not isinstance(img_meta, list):
+                    img_meta = [img_meta]
+                assert img_ids is not None and \
+                    'neg_category_ids' in img_meta[0] and \
+                    'not_exhaustive_category_ids' in img_meta[0], \
+                    'img_ids can not be none'
+                pos_idxs = labels > 0
+                neg_idxs = labels == 0
+                pos_cls_loss = self.loss_cls(
+                        cls_score[pos_idxs, :],
+                        labels[pos_idxs],
+                        label_weights[pos_idxs],
+                        gamma=self.fc_cls.gamma if hasattr(self.fc_cls, 'gamma') else None,
+                        avg_factor=None,
+                        reduction_override='sum')
+                neg_cls_loss = cls_score.new_zeros(1)
+                img_num = len(img_meta)
+                for i in range(img_num):
+                    neg_category_ids = torch.Tensor(img_meta[i]['neg_category_ids']).cuda().long()
+                    not_exhaustive_cat_ids = torch.Tensor(
+                        img_meta[i]['not_exhaustive_category_ids']).cuda().long()
+                    neg_cls_weights = torch.zeros(num_classes, device=device, dtype=torch.float32)
+                    neg_cls_weights[neg_category_ids] = 1
+                    neg_cls_weights[not_exhaustive_cat_ids] = 0
+                    neg_cls_weights[0] = 1
+                    img_neg_idxs = (img_ids == i) & neg_idxs
+                    neg_cls_loss += self.loss_cls(
+                        cls_score[img_neg_idxs, :],
+                        labels[img_neg_idxs],
+                        label_weights[img_neg_idxs],
+                        gamma=self.fc_cls.gamma if hasattr(self.fc_cls, 'gamma') else None,
+                        avg_factor=None,
+                        cls_weight=neg_cls_weights,
+                        reduction_override='sum')
+                    del neg_cls_weights
+                avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
+                losses['loss_cls'] = (pos_cls_loss + neg_cls_loss) / avg_factor
             else:
+                avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
                 losses['loss_cls'] = self.loss_cls(
                     cls_score,
                     labels,
                     label_weights,
+                    gamma=self.fc_cls.gamma if hasattr(self.fc_cls, 'gamma') else None,
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
+            if hasattr(self.fc_cls, 'gamma'):
+                losses['cls_gamma'] = self.fc_cls.gamma
             # print('loss_cls: {}'.format(losses['loss_cls'].item()))
             losses['acc'] = accuracy(cls_score[label_weights > 0, :], labels[label_weights > 0])
         if bbox_pred is not None:

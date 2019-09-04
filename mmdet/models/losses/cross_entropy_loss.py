@@ -6,9 +6,9 @@ from ..registry import LOSSES
 from .utils import weight_reduce_loss
 
 
-def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
+def cross_entropy(pred, label, weight=None, cls_weight=None, reduction='mean', avg_factor=None, **kwargs):
     # element-wise losses
-    loss = F.cross_entropy(pred, label, reduction='none')
+    loss = F.cross_entropy(pred, label, weight=cls_weight, reduction='none')
 
     # apply weights and do the reduction
     if weight is not None:
@@ -36,7 +36,8 @@ def binary_cross_entropy(pred,
                          label,
                          weight=None,
                          reduction='mean',
-                         avg_factor=None):
+                         avg_factor=None,
+                         **kwargs):
     if pred.dim() != label.dim():
         label, weight = _expand_binary_labels(label, weight, pred.size(-1))
 
