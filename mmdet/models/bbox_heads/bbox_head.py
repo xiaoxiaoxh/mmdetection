@@ -140,9 +140,14 @@ class BBoxHead(nn.Module):
              **kwargs):
         losses = dict()
         if cls_score is not None:
+            if 'rw_epoch' in rcnn_train_cfg and \
+                    self.epoch+1 >= rcnn_train_cfg.rw_epoch and \
+                    self.samples_per_cls is not None:
+                # TODO: fix background re-weighting
+                label_weights[labels > 0] /= torch.index_select(self.samples_per_cls, 0, labels-1)
+
             if 'use_anno_info' in rcnn_train_cfg and \
                     rcnn_train_cfg.use_anno_info:
-
                 device = cls_score.get_device()
                 num_classes = cls_score.shape[1]
                 if not isinstance(img_meta, list):
@@ -175,6 +180,8 @@ class BBoxHead(nn.Module):
                     neg_cls_weights[neg_category_ids] = 1
                     neg_cls_weights[not_exhaustive_cat_ids] = 0
                     neg_cls_weights[0] = 1
+                    if 'ignore_cls_normalize' in rcnn_train_cfg and rcnn_train_cfg.ignore_cls_normalize:
+                        neg_cls_weights = num_classes * neg_cls_weights / torch.sum(neg_cls_weights)
                     img_neg_idxs = (img_ids == i) & neg_idxs
                     neg_cls_loss += self.loss_cls(
                         cls_score[img_neg_idxs, :],
@@ -200,6 +207,7 @@ class BBoxHead(nn.Module):
                 losses['cls_gamma'] = self.fc_cls.gamma
             # print('loss_cls: {}'.format(losses['loss_cls'].item()))
             losses['acc'] = accuracy(cls_score[label_weights > 0, :], labels[label_weights > 0])
+
         if bbox_pred is not None:
             pos_inds = labels > 0
             if self.reg_class_agnostic:

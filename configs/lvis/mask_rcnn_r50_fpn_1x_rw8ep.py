@@ -47,7 +47,7 @@ model = dict(
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
-        samples_per_cls_file='data/LVIS/samples_per_cls.txt',
+        samples_per_cls_file='data/LVIS/samples_per_cls.txt',  # for LVIS only
     ),
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
@@ -100,6 +100,7 @@ train_cfg = dict(
             pos_fraction=0.25,
             neg_pos_ub=-1,
             add_gt_as_proposals=True),
+        rw_epoch=8,  # start re-weighting loss from n-th epoch
         mask_size=28,
         pos_weight=-1,
         debug=False))
@@ -183,7 +184,7 @@ evaluation = dict(interval=3)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_rw8ep'
 load_from = None
 resume_from = None
 auto_resume = True
