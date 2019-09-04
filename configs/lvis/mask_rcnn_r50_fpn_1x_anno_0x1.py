@@ -46,7 +46,8 @@ model = dict(
         reg_class_agnostic=False,
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
+    ),
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
@@ -98,7 +99,8 @@ train_cfg = dict(
             pos_fraction=0.25,
             neg_pos_ub=-1,
             add_gt_as_proposals=True),
-        use_anno_info=True,  # only for Lvis
+        use_anno_info=True,  # only for LVIS
+        ignore_cls_weight=0.1,  # only for LVIS
         mask_size=28,
         pos_weight=-1,
         debug=False))
@@ -182,7 +184,7 @@ evaluation = dict(interval=3)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_anno'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_anno_0x1'
 load_from = None
 resume_from = None
 auto_resume = True

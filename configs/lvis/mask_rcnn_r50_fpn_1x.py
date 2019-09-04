@@ -126,6 +126,7 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + 'lvis_v0.5_train.json',
         img_prefix=data_root + 'train2017.zip@/',
+        samples_per_cls_file=data_root + 'samples_per_cls.txt',
         img_scale=(1333, 800),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,

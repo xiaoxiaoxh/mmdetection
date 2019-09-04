@@ -161,12 +161,17 @@ class BBoxHead(nn.Module):
                         avg_factor=None,
                         reduction_override='sum')
                 neg_cls_loss = cls_score.new_zeros(1)
+                if 'ignore_cls_weight' in rcnn_train_cfg:
+                    ignore_cls_weight = rcnn_train_cfg.ignore_cls_weight
+                else:
+                    ignore_cls_weight = 0
                 img_num = len(img_meta)
                 for i in range(img_num):
                     neg_category_ids = torch.Tensor(img_meta[i]['neg_category_ids']).cuda().long()
                     not_exhaustive_cat_ids = torch.Tensor(
                         img_meta[i]['not_exhaustive_category_ids']).cuda().long()
-                    neg_cls_weights = torch.zeros(num_classes, device=device, dtype=torch.float32)
+                    neg_cls_weights = \
+                        torch.ones(num_classes, device=device, dtype=torch.float32) * ignore_cls_weight
                     neg_cls_weights[neg_category_ids] = 1
                     neg_cls_weights[not_exhaustive_cat_ids] = 0
                     neg_cls_weights[0] = 1
