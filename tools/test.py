@@ -167,6 +167,7 @@ def main():
         torch.backends.cudnn.benchmark = True
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
+    cfg.test_cfg.rcnn.max_per_img = 300
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
