@@ -100,7 +100,7 @@ train_cfg = dict(
             neg_pos_ub=-1,
             add_gt_as_proposals=True),
         use_anno_info=True,  # only for LVIS
-        ignore_cls_weight=0.3,  # only for LVIS
+        ignore_cls_weight=0.4,  # only for LVIS
         ignore_cls_normalize=True,  # normalize weights of classes to C
         mask_size=28,
         pos_weight=-1,
@@ -185,7 +185,7 @@ evaluation = dict(interval=3)
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_anno_0x3_norm'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_anno_0x4_norm'
 load_from = None
 resume_from = None
 auto_resume = True
