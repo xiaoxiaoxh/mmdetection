@@ -169,7 +169,7 @@ def main():
     cfg.data.test.test_mode = True
     if cfg.dataset_type == 'LvisDataSet':
         cfg.test_cfg.rcnn.max_per_img = 300
-        cfg.test_cfg.rcnn.nms.iou_thr = 0.3
+        cfg.test_cfg.rcnn.nms.type = 'soft_nms'
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
