@@ -1,8 +1,6 @@
+from argparse import ArgumentParser
 import os
 import sys
-path = os.getcwd()
-sys.path.insert(0, path)
-from argparse import ArgumentParser
 
 from mmdet.core import lvis_eval
 
@@ -29,4 +27,6 @@ def main():
 
 
 if __name__ == '__main__':
+    path = os.getcwd()
+    sys.path.insert(0, path)
     main()
