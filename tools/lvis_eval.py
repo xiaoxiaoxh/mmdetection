@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 import os
 import sys
 
+from mmdet.apis import init_dist
 from mmdet.core import lvis_eval
 
 
