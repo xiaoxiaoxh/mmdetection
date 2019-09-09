@@ -37,9 +37,9 @@ def lvis_eval(result_files, result_types, lvis, max_dets=(100, 300, 1000)):
 
 
 def lvis_fast_eval_recall(results,
-                     lvis,
-                     max_dets,
-                     iou_thrs=np.arange(0.5, 0.96, 0.05)):
+                          lvis,
+                          max_dets,
+                          iou_thrs=np.arange(0.5, 0.96, 0.05)):
     if mmcv.is_str(results):
         assert results.endswith('.pkl')
         results = mmcv.load(results)
@@ -58,8 +58,6 @@ def lvis_fast_eval_recall(results,
             continue
         bboxes = []
         for ann in ann_info:
-            if ann.get('ignore', False) or ann['iscrowd']:
-                continue
             x1, y1, w, h = ann['bbox']
             bboxes.append([x1, y1, x1 + w - 1, y1 + h - 1])
         bboxes = np.array(bboxes, dtype=np.float32)
