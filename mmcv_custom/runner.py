@@ -5,7 +5,7 @@ from mmcv.runner.utils import obj_from_dict
 import torch
 import time
 from .parameters import parameters
-from mmcv.runner.checkpoint import save_checkpoint
+from .checkpoint import save_checkpoint, load_checkpoint
 
 
 class Runner(mmcv.runner.Runner):
@@ -74,6 +74,11 @@ class Runner(mmcv.runner.Runner):
 
         self.call_hook('after_train_epoch')
         self._epoch += 1
+
+    def load_checkpoint(self, filename, map_location='cpu', strict=False):
+        self.logger.info('load checkpoint from %s', filename)
+        return load_checkpoint(self.model, filename, map_location, strict,
+                               self.logger)
 
     def save_checkpoint(self,
                         out_dir,
