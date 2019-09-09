@@ -1,10 +1,10 @@
 # fp16 settings
-fp16 = dict(loss_scale=512.)
+# fp16 = dict(loss_scale=512.)
 
 # model settings
 model = dict(
     type='MaskRCNN',
-    pretrained='https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth',
+    pretrained='modelzoo://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -110,9 +110,9 @@ test_cfg = dict(
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
-        score_thr=0.05,
+        score_thr=0.01,
         nms=dict(type='nms', iou_thr=0.5),
-        max_per_img=100,
+        max_per_img=300,
         mask_thr_binary=0.5))
 # dataset settings
 dataset_type = 'LvisDataSet'
@@ -175,13 +175,13 @@ log_config = dict(
         dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
-evaluation = dict(interval=1)
+evaluation = dict(interval=3)  # 3 by default
 # runtime settings
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_coco'
-load_from = None
+load_from = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth'
 resume_from = None
 auto_resume = True
 workflow = [('train', 1)]
