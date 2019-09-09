@@ -54,6 +54,7 @@ def load_state_dict(module, state_dict, strict=False, logger=None):
             message. If not specified, print function will be used.
     """
     unexpected_keys = []
+    mismatch_keys = []
     own_state = module.state_dict()
     for name, param in state_dict.items():
         if name not in own_state:
@@ -66,15 +67,13 @@ def load_state_dict(module, state_dict, strict=False, logger=None):
         try:
             own_state[name].copy_(param)
         except Exception:
-            print('While copying the parameter named {}, '
-                  'whose dimensions in the model are {} and ' 
-                  'whose dimensions in the checkpoint are {}.'.format(
-                    name, own_state[name].size(), param.size()))
-            # raise RuntimeError(
-            #     'While copying the parameter named {}, '
-            #     'whose dimensions in the model are {} and '
-            #     'whose dimensions in the checkpoint are {}.'.format(
-            #         name, own_state[name].size(), param.size()))
+            mismatch_keys.append(name)
+            if strict:
+                raise RuntimeError(
+                    'While copying the parameter named {}, '
+                    'whose dimensions in the model are {} and '
+                    'whose dimensions in the checkpoint are {}.'.format(
+                        name, own_state[name].size(), param.size()))
     missing_keys = set(own_state.keys()) - set(state_dict.keys())
 
     err_msg = []
@@ -84,6 +83,9 @@ def load_state_dict(module, state_dict, strict=False, logger=None):
     if missing_keys:
         err_msg.append('missing keys in source state_dict: {}\n'.format(
             ', '.join(missing_keys)))
+    if mismatch_keys:
+        err_msg.append('dimension mismatching keys in source state_dict: {}\n'.format(
+            ', '.join(mismatch_keys)))
     err_msg = '\n'.join(err_msg)
     if err_msg:
         if strict:
