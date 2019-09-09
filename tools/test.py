@@ -35,7 +35,7 @@ def single_gpu_test(model, data_loader, show=False, show_gt=False, work_dir=None
         else:
             test_data = data
         with torch.no_grad():
-            result = model(return_loss=False, rescale=not show, **test_data)
+            result = model(return_loss=False, rescale=not show, out_proposal=True, **test_data)
         results.append(result)
         # TODO: support multiple imgs per gpu
         if show_gt:

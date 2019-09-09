@@ -168,6 +168,8 @@ def results2json(dataset, results, out_file):
         result_files['segm'] = '{}.{}.json'.format(out_file, 'segm')
         mmcv.dump(json_results[0], result_files['bbox'])
         mmcv.dump(json_results[1], result_files['segm'])
+        if len(results[0]) > 2:  # add proposal
+            mmcv.dump(json_results[2], result_files['proposal'])
     elif isinstance(results[0], np.ndarray):
         json_results = proposal2json(dataset, results)
         result_files['proposal'] = '{}.{}.json'.format(out_file, 'proposal')

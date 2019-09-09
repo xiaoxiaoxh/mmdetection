@@ -123,7 +123,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                       gt_labels,
                       gt_bboxes_ignore=None,
                       gt_masks=None,
-                      proposals=None):
+                      proposals=None,
+                      **kwargs):
         x = self.extract_feat(img)
 
         losses = dict()
@@ -229,7 +230,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         return losses
 
-    def simple_test(self, img, img_meta, proposals=None, rescale=False):
+    def simple_test(self, img, img_meta, proposals=None, rescale=False, out_proposal=False, **kwargs):
         """Test without augmentation."""
         assert self.with_bbox, "Bbox head must be implemented."
 
@@ -248,9 +249,12 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         else:
             segm_results = self.simple_test_mask(
                 x, img_meta, det_bboxes, det_labels, rescale=rescale)
-            return bbox_results, segm_results
+            if out_proposal:  # add out proposal
+                return bbox_results, segm_results, proposal_list
+            else:
+                return bbox_results, segm_results
 
-    def aug_test(self, imgs, img_metas, rescale=False):
+    def aug_test(self, imgs, img_metas, rescale=False, **kwargs):
         """Test with augmentations.
 
         If rescale is False, then returned bboxes and masks will fit the scale

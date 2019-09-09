@@ -51,7 +51,7 @@ def lvis_fast_eval_recall(results,
     gt_bboxes = []
     img_ids = lvis.get_img_ids()
     for i in range(len(img_ids)):
-        ann_ids = lvis.get_ann_ids(imgIds=img_ids[i])
+        ann_ids = lvis.get_ann_ids(img_ids=[img_ids[i]])
         ann_info = lvis.load_anns(ann_ids)
         if len(ann_info) == 0:
             gt_bboxes.append(np.zeros((0, 4)))
