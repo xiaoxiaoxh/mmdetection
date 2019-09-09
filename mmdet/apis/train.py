@@ -188,10 +188,10 @@ def _dist_train(model, dataset, cfg, validate=False):
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)
-    elif cfg.auto_resume:
-        runner.auto_resume()
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
+    elif cfg.auto_resume:
+        runner.auto_resume()
     runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
 
 
