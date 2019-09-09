@@ -1,3 +1,7 @@
+import os
+import sys
+path = os.getcwd()
+sys.path.insert(0, path)
 from argparse import ArgumentParser
 
 from mmdet.core import lvis_eval
