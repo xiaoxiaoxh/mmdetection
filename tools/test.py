@@ -237,14 +237,15 @@ def main():
     if args.out and rank == 0:
         print('\nwriting results to {}'.format(args.out))
         mmcv.dump(outputs, args.out)
-        # outputs = mmcv.load(args.out)  # debug only
         eval_types = args.eval
         if eval_types:
             print('Starting evaluate {}'.format(' and '.join(eval_types)))
-            if eval_types == ['proposal_fast']:
+            if 'proposal_fast' in eval_types:
                 result_file = args.out
-                lvis_eval(result_file, eval_types, dataset.lvis)
-            else:
+                lvis_eval(result_file, ['proposal_fast'], dataset.lvis)
+                eval_types.remove('proposal_fast')
+
+            if len(eval_types) > 0:
                 if not isinstance(outputs[0], dict):
                     result_files = results2json(dataset, outputs, args.out)
                     lvis_eval(result_files, eval_types, dataset.lvis)

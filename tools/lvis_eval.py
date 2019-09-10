@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 import os
 import sys
+import os.path as osp
 
 import mmcv
 from mmdet.apis import init_dist
@@ -12,6 +13,8 @@ def main():
     parser = ArgumentParser(description='LVIS Evaluation')
     parser.add_argument('result', help='result file path')
     parser.add_argument('--cfg', help='config file path')
+    parser.add_argument('--auto-dir', action='store_true',
+                        help='auto generate result dir based on config file')
     parser.add_argument(
         '--types',
         type=str,
@@ -28,14 +31,20 @@ def main():
     args = parser.parse_args()
 
     cfg = mmcv.Config.fromfile(args.cfg)
+    if args.auto_dir:
+        work_dir = cfg.work_dir
+        args.result = osp.join(work_dir, args.result)
+
     dataset = build_dataset(cfg.data.test)
     eval_types = args.types
     if eval_types:
         print('Starting evaluate {}'.format(' and '.join(eval_types)))
-        if eval_types == ['proposal_fast']:
+        if 'proposal_fast' in eval_types:
             result_file = args.result
-            lvis_eval(result_file, eval_types, dataset.lvis, args.max_dets)
-        else:
+            lvis_eval(result_file, ['proposal_fast'], dataset.lvis, args.max_dets)
+            eval_types.remove('proposal_fast')
+
+        if len(eval_types) > 0:
             results = mmcv.load(args.result)
             if not isinstance(results[0], dict):
                 result_files = results2json(dataset, results, args.result)

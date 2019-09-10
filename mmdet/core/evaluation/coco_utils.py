@@ -154,7 +154,7 @@ def segm2json(dataset, results):
     return bbox_json_results, segm_json_results
 
 
-def all2json(dataset, results):
+def all2json(dataset, results, out_proposal=False):
     bbox_json_results = []
     segm_json_results = []
     proposal_json_results = []
@@ -162,7 +162,6 @@ def all2json(dataset, results):
         img_id = dataset.img_ids[idx]
         det, seg, proposal = results[idx]
         # TODO: support multiple images per GPU
-        proposal = proposal[0]
         for label in range(len(det)):
             # bbox results
             bboxes = det[label]
@@ -191,15 +190,22 @@ def all2json(dataset, results):
                 data['segmentation'] = segms[i]
                 segm_json_results.append(data)
 
+        if not out_proposal:
+            continue
         #  proposal result
-        for i in range(proposal.shape[0]):
+        proposal = proposal[0]
+        for i in range(proposal[0].shape[0]):
             data = dict()
             data['image_id'] = img_id
             data['bbox'] = xyxy2xywh(proposal[i])
             data['score'] = float(proposal[i][4])
             data['category_id'] = 1
             proposal_json_results.append(data)
-    return bbox_json_results, segm_json_results, proposal_json_results
+
+    if out_proposal:
+        return bbox_json_results, segm_json_results, proposal_json_results
+    else:
+        return bbox_json_results, segm_json_results
 
 
 def results2json(dataset, results, out_file):
@@ -214,8 +220,8 @@ def results2json(dataset, results, out_file):
         result_files['proposal'] = '{}.{}.json'.format(out_file, 'proposal')
         result_files['segm'] = '{}.{}.json'.format(out_file, 'segm')
         if len(results[0]) > 2:
-            json_results = all2json(dataset, results)  # (bbox, segm, proposal)
-            mmcv.dump(json_results[2], result_files['proposal'])
+            json_results = all2json(dataset, results, out_proposal=False)
+            # mmcv.dump(json_results[2], result_files['proposal'])  # (bbox, segm, proposal)
         else:
             json_results = segm2json(dataset, results)
         mmcv.dump(json_results[0], result_files['bbox'])
