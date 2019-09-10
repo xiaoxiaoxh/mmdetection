@@ -15,5 +15,5 @@ __all__ = [
     'fast_eval_recall', 'results2json', 'DistEvalHook', 'DistEvalmAPHook',
     'CocoDistEvalRecallHook', 'CocoDistEvalmAPHook', 'average_precision', 'LvisDistEvalmAPHook',
     'eval_map', 'print_map_summary', 'eval_recalls', 'print_recall_summary',
-    'plot_num_recall', 'plot_iou_recall', 'lvis_eval', 'lvis_fast_eval_recall'
+    'plot_num_recall', 'plot_iou_recall', 'lvis_eval', 'lvis_fast_eval_recall',
 ]

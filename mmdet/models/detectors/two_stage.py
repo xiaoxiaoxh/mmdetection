@@ -233,7 +233,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
     def simple_test(self, img, img_meta, proposals=None, rescale=False, out_proposal=False, **kwargs):
         """Test without augmentation."""
         assert self.with_bbox, "Bbox head must be implemented."
-
+        # TODO: support multiple images per GPU
         x = self.extract_feat(img)
 
         proposal_list = self.simple_test_rpn(
@@ -250,7 +250,14 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             segm_results = self.simple_test_mask(
                 x, img_meta, det_bboxes, det_labels, rescale=rescale)
             results = (bbox_results, segm_results)
+
         if out_proposal:
+            if rescale:
+                img_shape = img_meta[0]['img_shape']
+                scale_factor = img_meta[0]['scale_factor']
+                proposal_list[0][:, [0, 2]].clamp_(min=0, max=img_shape[1] - 1)
+                proposal_list[0][:, [1, 3]].clamp_(min=0, max=img_shape[0] - 1)
+                proposal_list[0][:, :4] /= scale_factor
             results = results + (proposal_list, )
         return results
 
