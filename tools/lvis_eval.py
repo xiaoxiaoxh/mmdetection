@@ -1,6 +1,8 @@
 from argparse import ArgumentParser
 import os
 import sys
+path = os.getcwd()
+sys.path.insert(0, path)
 import os.path as osp
 
 import mmcv
@@ -60,6 +62,4 @@ def main():
 
 
 if __name__ == '__main__':
-    path = os.getcwd()
-    sys.path.insert(0, path)
     main()
