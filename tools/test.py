@@ -133,6 +133,8 @@ def parse_args():
         choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
         help='eval types')
     parser.add_argument('--analyze', action='store_true', help='analyze checkpoint')
+    parser.add_argument('--auto-dir', action='store_true',
+                        help='auto generate checkpoint and result dir based on config file')
     parser.add_argument('--show', action='store_true', help='show results')
     parser.add_argument('--show-gt', action='store_true', help='show ground truth')
     parser.add_argument('--tmpdir', help='tmp dir for writing some results')
@@ -158,10 +160,21 @@ def main():
     if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
         raise ValueError('The output file must be a pkl file.')
 
+    if args.out is not None and not args.auto_dir:
+        assert osp.exists(osp.dirname(args.out)), 'output file directory does not exist!!'
+
     if args.json_out is not None and args.json_out.endswith('.json'):
         args.json_out = args.json_out[:-5]
 
     cfg = mmcv.Config.fromfile(args.config)
+    if args.auto_dir:
+        work_dir = cfg.work_dir
+        args.checkpoint = osp.join(work_dir, args.checkpoint)
+        if args.out:
+            args.out = osp.join(work_dir, args.out)
+        if args.json_out:
+            args.json_out = osp.join(work_dir, args.json_out)
+
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
