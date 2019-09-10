@@ -40,6 +40,7 @@ def main():
     if eval_types:
         print('Starting evaluate {}'.format(' and '.join(eval_types)))
         if 'proposal_fast' in eval_types:
+            print('Evaluating {}\n'.format('proposal_fast'))
             result_file = args.result
             lvis_eval(result_file, ['proposal_fast'], dataset.lvis, args.max_dets)
             eval_types.remove('proposal_fast')
