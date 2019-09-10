@@ -161,6 +161,7 @@ def all2json(dataset, results):
     for idx in range(len(dataset)):
         img_id = dataset.img_ids[idx]
         det, seg, proposal = results[idx]
+        # TODO: support multiple images per GPU
         proposal = proposal[0]
         for label in range(len(det)):
             # bbox results

@@ -122,7 +122,9 @@ def print_recall_summary(recalls,
         row_idxs = np.arange(proposal_nums.size)
     if col_idxs is None:
         col_idxs = np.arange(iou_thrs.size)
-    row_header = [''] + iou_thrs[col_idxs].tolist()
+    row_header = ['']
+    for i in range(col_idxs.shape[0]):
+        row_header.append('{:.2f}'.format(iou_thrs[col_idxs[i]]))
     table_data = [row_header]
     for i, num in enumerate(proposal_nums[row_idxs]):
         row = [

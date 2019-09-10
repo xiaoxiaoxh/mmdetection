@@ -5,6 +5,7 @@ from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
 class RPNTestMixin(object):
 
     def simple_test_rpn(self, x, img_meta, rpn_test_cfg):
+        # TODO: support multiple imgs per GPU
         rpn_outs = self.rpn_head(x)
         proposal_inputs = rpn_outs + (img_meta, rpn_test_cfg)
         proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
@@ -42,6 +43,7 @@ class BBoxTestMixin(object):
                            rcnn_test_cfg,
                            rescale=False):
         """Test only det bboxes without augmentation."""
+        # TODO: support multiple imgs per GPU
         rois = bbox2roi(proposals)
         roi_feats = self.bbox_roi_extractor(
             x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
@@ -107,6 +109,7 @@ class MaskTestMixin(object):
                          det_labels,
                          rescale=False):
         # image shape of the first image in the batch (only one)
+        # TODO: support multiple imgs per GPU
         ori_shape = img_meta[0]['ori_shape']
         scale_factor = img_meta[0]['scale_factor']
         if det_bboxes.shape[0] == 0:

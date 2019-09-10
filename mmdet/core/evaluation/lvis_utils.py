@@ -73,6 +73,7 @@ def lvis_fast_eval_recall(results,
 
 
 def proposal2numpy(results):
+    # TODO: support multiple imgs per GPU
     proposals = []
     for idx in range(len(results)):
         proposals.append(results[idx][-1][0].cpu().numpy())
