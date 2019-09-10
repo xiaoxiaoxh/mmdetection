@@ -43,10 +43,14 @@ def lvis_fast_eval_recall(results,
     if mmcv.is_str(results):
         assert results.endswith('.pkl')
         results = mmcv.load(results)
+        if isinstance(results, tuple):  # add for tuple such as (bbox, segm, proposal)
+            results = results[-1]
     elif not isinstance(results, list):
         raise TypeError(
             'results must be a list of numpy arrays or a filename, not {}'.
             format(type(results)))
+    assert isinstance(results, list), \
+        'results must be a list of numpy arrays or a filename, not {}'.format(type(results))
 
     gt_bboxes = []
     img_ids = lvis.get_img_ids()

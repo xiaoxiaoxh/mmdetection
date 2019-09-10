@@ -29,17 +29,14 @@ def main():
 
     cfg = mmcv.Config.fromfile(args.cfg)
     dataset = build_dataset(cfg.data.test)
-    results = mmcv.load(args.result)
     eval_types = args.types
     if eval_types:
         print('Starting evaluate {}'.format(' and '.join(eval_types)))
         if eval_types == ['proposal_fast']:
-            if isinstance(results[0], tuple):
-                result_file = results2json(dataset, results, args.result)
-                lvis_eval(result_file[-1], eval_types, dataset.lvis, args.max_dets)
-            else:
-                raise NotImplementedError
+            result_file = args.result
+            lvis_eval(result_file, eval_types, dataset.lvis, args.max_dets)
         else:
+            results = mmcv.load(args.result)
             if not isinstance(results[0], dict):
                 result_files = results2json(dataset, results, args.result)
                 lvis_eval(result_files, eval_types, dataset.lvis, args.max_dets)
