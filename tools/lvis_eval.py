@@ -34,8 +34,11 @@ def main():
     if eval_types:
         print('Starting evaluate {}'.format(' and '.join(eval_types)))
         if eval_types == ['proposal_fast']:
-            result_file = args.result
-            lvis_eval(result_file, eval_types, dataset.lvis, args.max_dets)
+            if isinstance(results[0], tuple):
+                result_file = results2json(dataset, results, args.result)
+                lvis_eval(result_file[-1], eval_types, dataset.lvis, args.max_dets)
+            else:
+                raise NotImplementedError
         else:
             if not isinstance(results[0], dict):
                 result_files = results2json(dataset, results, args.result)
