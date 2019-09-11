@@ -21,7 +21,7 @@ def main():
         '--types',
         type=str,
         nargs='+',
-        choices=['proposal_fast', 'bbox', 'segm'],
+        choices=['proposal_fast', 'proposal', 'bbox', 'segm'],
         default=['bbox'],
         help='result types')
     parser.add_argument(
