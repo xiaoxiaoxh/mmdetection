@@ -258,6 +258,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 proposal_list[0][:, [0, 2]].clamp_(min=0, max=img_shape[1] - 1)
                 proposal_list[0][:, [1, 3]].clamp_(min=0, max=img_shape[0] - 1)
                 proposal_list[0][:, :4] /= scale_factor
+            proposal_list[0] = proposal_list[0].cpu().numpy()
             results = results + (proposal_list, )
         return results
 
