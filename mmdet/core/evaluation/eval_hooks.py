@@ -8,7 +8,7 @@ import torch.distributed as dist
 from mmcv.parallel import collate, scatter
 from mmcv.runner import Hook
 from pycocotools.cocoeval import COCOeval
-from lvis import LVISEval
+from .lvis_utils import LVISEvalCustom
 from torch.utils.data import Dataset
 
 from mmdet import datasets
@@ -175,7 +175,7 @@ class LvisDistEvalmAPHook(DistEvalHook):
     def evaluate(self, runner, results):
         print('Current work dir: {}'.format(runner.work_dir))
         tmp_file = osp.join(runner.work_dir, 'temp_0')
-        result_files = results2json(self.dataset, results, tmp_file)
+        result_files = results2json(self.dataset, results, tmp_file, dump_json=False)
 
         res_types = ['bbox', 'segm'
                      ] if runner.model.module.with_mask else ['bbox']
@@ -183,10 +183,11 @@ class LvisDistEvalmAPHook(DistEvalHook):
         img_ids = lvis.get_img_ids()
         for res_type in res_types:
             result_file = result_files[res_type]
-            assert result_file.endswith('.json')
+            if isinstance(result_file, str):
+                assert result_file.endswith('.json')
 
             iou_type = res_type
-            lvisEval = LVISEval(lvis, result_file, iou_type)
+            lvisEval = LVISEvalCustom(lvis, result_file, iou_type)
             lvisEval.params.img_ids = img_ids
             lvisEval.run()
             print('-' * 8 + '{} results'.format(res_type) + '-' * 8)
@@ -195,4 +196,5 @@ class LvisDistEvalmAPHook(DistEvalHook):
 
         runner.log_buffer.ready = True
         for res_type in res_types:
-            os.remove(result_files[res_type])
+            if osp.exists(result_files[res_type]):
+                os.remove(result_files[res_type])

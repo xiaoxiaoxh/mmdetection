@@ -41,24 +41,17 @@ def main():
     eval_types = args.types
     if eval_types:
         print('Starting evaluate {}'.format(' and '.join(eval_types)))
-        if 'proposal_fast' in eval_types:
-            print('Evaluating {}\n'.format('proposal_fast'))
-            result_file = args.result
-            lvis_eval(result_file, ['proposal_fast'], dataset.lvis, args.max_dets)
-            eval_types.remove('proposal_fast')
-
-        if len(eval_types) > 0:
-            results = mmcv.load(args.result)
-            if not isinstance(results[0], dict):
-                result_files = results2json(dataset, results, args.result)
+        results = mmcv.load(args.result)
+        if not isinstance(results[0], dict):
+            result_files = results2json(dataset, results, args.result, dump_json=False)
+            lvis_eval(result_files, eval_types, dataset.lvis, args.max_dets)
+        else:
+            for name in results[0]:
+                print('\nEvaluating {}'.format(name))
+                outputs_ = [out[name] for out in results]
+                result_file = args.result + '.{}'.format(name)
+                result_files = results2json(dataset, outputs_, result_file, dump_json=False)
                 lvis_eval(result_files, eval_types, dataset.lvis, args.max_dets)
-            else:
-                for name in results[0]:
-                    print('\nEvaluating {}'.format(name))
-                    outputs_ = [out[name] for out in results]
-                    result_file = args.result + '.{}'.format(name)
-                    result_files = results2json(dataset, outputs_, result_file)
-                    lvis_eval(result_files, eval_types, dataset.lvis, args.max_dets)
 
 
 if __name__ == '__main__':

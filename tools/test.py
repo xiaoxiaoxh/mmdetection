@@ -240,33 +240,26 @@ def main():
         eval_types = args.eval
         if eval_types:
             print('Starting evaluate {}'.format(' and '.join(eval_types)))
-            if 'proposal_fast' in eval_types:
-                result_file = args.out
-                lvis_eval(result_file, ['proposal_fast'], dataset.lvis)
-                eval_types.remove('proposal_fast')
-
-            if len(eval_types) > 0:
-                if not isinstance(outputs[0], dict):
-                    result_files = results2json(dataset, outputs, args.out)
+            if not isinstance(outputs[0], dict):
+                result_files = results2json(dataset, outputs, args.out, dump_json=False)
+                lvis_eval(result_files, eval_types, dataset.lvis)
+            else:
+                for name in outputs[0]:
+                    print('\nEvaluating {}'.format(name))
+                    outputs_ = [out[name] for out in outputs]
+                    result_file = args.out + '.{}'.format(name)
+                    result_files = results2json(dataset, outputs_, result_file, dump_json=False)
                     lvis_eval(result_files, eval_types, dataset.lvis)
-                else:
-                    for name in outputs[0]:
-                        print('\nEvaluating {}'.format(name))
-                        outputs_ = [out[name] for out in outputs]
-                        result_file = args.out + '.{}'.format(name)
-                        result_files = results2json(dataset, outputs_,
-                                                    result_file)
-                        lvis_eval(result_files, eval_types, dataset.lvis)
 
     # Save predictions in the COCO json format
     if args.json_out and rank == 0:
         if not isinstance(outputs[0], dict):
-            results2json(dataset, outputs, args.json_out)
+            results2json(dataset, outputs, args.json_out, dump_json=True)
         else:
             for name in outputs[0]:
                 outputs_ = [out[name] for out in outputs]
                 result_file = args.json_out + '.{}'.format(name)
-                results2json(dataset, outputs_, result_file)
+                results2json(dataset, outputs_, result_file, dump_json=True)
 
 
 if __name__ == '__main__':

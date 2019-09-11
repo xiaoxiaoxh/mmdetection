@@ -161,7 +161,6 @@ def all2json(dataset, results, out_proposal=False):
     for idx in range(len(dataset)):
         img_id = dataset.img_ids[idx]
         det, seg, proposal = results[idx]
-        # TODO: support multiple images per GPU
         for label in range(len(det)):
             # bbox results
             bboxes = det[label]
@@ -190,17 +189,15 @@ def all2json(dataset, results, out_proposal=False):
                 data['segmentation'] = segms[i]
                 segm_json_results.append(data)
 
-        if not out_proposal:
-            continue
-        #  proposal result
-        proposal = proposal[0]
-        for i in range(proposal[0].shape[0]):
-            data = dict()
-            data['image_id'] = img_id
-            data['bbox'] = xyxy2xywh(proposal[i])
-            data['score'] = float(proposal[i][4])
-            data['category_id'] = 1
-            proposal_json_results.append(data)
+        if out_proposal:
+            #  proposal result
+            for i in range(proposal.shape[0]):
+                data = dict()
+                data['image_id'] = img_id
+                data['bbox'] = xyxy2xywh(proposal[i])
+                data['score'] = float(proposal[i][4])
+                data['category_id'] = 1  # for proposal only
+                proposal_json_results.append(data)
 
     if out_proposal:
         return bbox_json_results, segm_json_results, proposal_json_results
@@ -208,28 +205,39 @@ def all2json(dataset, results, out_proposal=False):
         return bbox_json_results, segm_json_results
 
 
-def results2json(dataset, results, out_file):
+def results2json(dataset, results, out_file, dump_json=True):
     result_files = dict()
     if isinstance(results[0], list):
         json_results = det2json(dataset, results)
         result_files['bbox'] = '{}.{}.json'.format(out_file, 'bbox')
-        result_files['proposal'] = '{}.{}.json'.format(out_file, 'proposal')
-        mmcv.dump(json_results, result_files['bbox'])
+        if dump_json:
+            mmcv.dump(json_results, result_files['bbox'])
+        else:
+            result_files['bbox'] = json_results
     elif isinstance(results[0], tuple):
         result_files['bbox'] = '{}.{}.json'.format(out_file, 'bbox')
         result_files['proposal'] = '{}.{}.json'.format(out_file, 'proposal')
         result_files['segm'] = '{}.{}.json'.format(out_file, 'segm')
         if len(results[0]) > 2:
-            json_results = all2json(dataset, results, out_proposal=False)
-            # mmcv.dump(json_results[2], result_files['proposal'])  # (bbox, segm, proposal)
+            json_results = all2json(dataset, results, out_proposal=True)
+            if dump_json:
+                mmcv.dump(json_results[2], result_files['proposal'])  # (bbox, segm, proposal)
+            else:
+                result_files['proposal'] = json_results[2]
         else:
             json_results = segm2json(dataset, results)
-        mmcv.dump(json_results[0], result_files['bbox'])
-        mmcv.dump(json_results[1], result_files['segm'])
+        if dump_json:
+            mmcv.dump(json_results[0], result_files['bbox'])
+            mmcv.dump(json_results[1], result_files['segm'])
+        else:
+            result_files['bbox'], result_files['segm'] = json_results[0], json_results[1]
     elif isinstance(results[0], np.ndarray):
         json_results = proposal2json(dataset, results)
         result_files['proposal'] = '{}.{}.json'.format(out_file, 'proposal')
-        mmcv.dump(json_results, result_files['proposal'])
+        if dump_json:
+            mmcv.dump(json_results, result_files['proposal'])
+        else:
+            result_files['proposal'] = json_results
     else:
         raise TypeError('invalid type of results')
     return result_files
