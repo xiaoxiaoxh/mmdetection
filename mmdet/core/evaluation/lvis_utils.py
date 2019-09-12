@@ -243,20 +243,19 @@ def lvis_fast_eval_recall(results,
         freq_groups[lvisEval.params.img_count_lbl.index(frequency)].append(idx+1)
 
     gt_bboxes_all = defaultdict(list)
-    dt_bboxes_all = defaultdict(list)
+    dt_bboxes_all = []
     for area_idx in range(len(area_rngs)):
         for group_idx in range(len(freq_groups)):
             gt_bboxes_all[group_idx, area_idx] = []
-        dt_bboxes_all[area_idx] = []
 
     gt_bboxes = defaultdict(list)
-    dt_bboxes = defaultdict(list)
+    all_num = np.zeros((len(freq_groups), len(area_rngs)))
     group_num = np.zeros((len(freq_groups), 1))
     for i in range(len(img_ids)):
+        dt_bboxes = []
         for area_idx in range(len(area_rngs)):
             for group_idx in range(len(freq_groups)):
                 gt_bboxes[group_idx, area_idx] = []
-            dt_bboxes[area_idx] = []
 
         ann_ids = lvisEval.lvis_gt.get_ann_ids(img_ids=[img_ids[i]])
         ann_info = lvisEval.lvis_gt.load_anns(ann_ids)
@@ -284,36 +283,44 @@ def lvis_fast_eval_recall(results,
                         [x1, y1, x1 + w - 1, y1 + h - 1])
 
         for det in det_info:
-            for area_idx, area_rng in enumerate(area_rngs):
-                if area_rng[0] <= det['area'] < area_rng[1]:
-                    x1, y1, w, h = det['bbox']
-                    dt_bboxes[area_idx].append(
-                        [x1, y1, x1 + w - 1, y1 + h - 1, det['score']])
+            x1, y1, w, h = det['bbox']
+            dt_bboxes.append([x1, y1, x1 + w - 1, y1 + h - 1, det['score']])
 
         for area_idx in range(len(area_rngs)):
             for group_idx in range(len(freq_groups)):
                 if len(gt_bboxes[group_idx, area_idx]) == 0:
                     gt_bboxes_all[group_idx, area_idx].append(np.zeros((0, 4)))
                 else:
+                    all_num[group_idx, area_idx] += len(gt_bboxes[group_idx, area_idx])
                     gt_bboxes_all[group_idx, area_idx].append(
                         np.array(gt_bboxes[group_idx, area_idx], dtype=np.float32))
-            if len(dt_bboxes[area_idx]) == 0:
-                dt_bboxes_all[area_idx].append(np.zeros((0, 5)))
-            else:
-                dt_bboxes_all[area_idx].append(
-                    np.array(dt_bboxes[area_idx], dtype=np.float32))
+
+        if len(dt_bboxes) == 0:
+            dt_bboxes_all.append(np.zeros((0, 5)))
+        else:
+            dt_bboxes_all.append(
+                np.array(dt_bboxes, dtype=np.float32))
 
     ar_all = np.zeros((len(freq_groups), len(area_rngs), len(max_dets)))
     for group_idx in range(len(freq_groups)):
         for area_idx in range(len(area_rngs)):
             recalls = eval_recalls(
                 gt_bboxes_all[group_idx, area_idx],
-                dt_bboxes_all[area_idx],
+                dt_bboxes_all,
                 max_dets, iou_thrs, print_summary=False)
             ar_all[group_idx, area_idx, :] = recalls.mean(axis=1)
     ar_all = np.transpose(ar_all, (2, 0, 1))
 
-    # print(group_num.tolist())
+    area_rng_name = ["all", "small", "medium", "large"]
+    freq_group_name = ["rare", "common", "freq"]
+
+    table_data = [['Num'] + area_rng_name]
+    for group_idx in range(len(freq_groups)):
+        row = ['{}'.format(int(val)) for val in all_num[group_idx, :].tolist()]
+        row.insert(0, freq_group_name[group_idx])
+        table_data.append(row)
+    print(AsciiTable(table_data).table)
+
     recalls = np.zeros((max_dets.size, len(freq_groups) + len(area_rngs)))
     for det_num_idx, max_det in enumerate(max_dets):
         ar = ar_all[det_num_idx, :, :]
@@ -323,9 +330,16 @@ def lvis_fast_eval_recall(results,
         for group_idx in range(len(freq_groups)):
             recalls[det_num_idx, group_idx + len(area_rngs)] = ar[group_idx, 0]  # rare common freq
 
-    area_rng_name = ["all", "small", "medium", "large"]
-    freq_group_name = ["rare", "common", "freq"]
-    row_header = [''] + area_rng_name + freq_group_name
+        row_header = ['AR@{}'.format(max_det)] + area_rng_name
+        table_data = [row_header]
+        for group_idx in range(len(freq_groups)):
+            row = ['{:.3f}'.format(val) for val in ar[group_idx, :].tolist()]
+            row.insert(0, freq_group_name[group_idx])
+            table_data.append(row)
+        table = AsciiTable(table_data)
+        print(table.table)
+
+    row_header = ['AR'] + area_rng_name + freq_group_name
     table_data = [row_header]
     for i, num in enumerate(max_dets):
         row = [
