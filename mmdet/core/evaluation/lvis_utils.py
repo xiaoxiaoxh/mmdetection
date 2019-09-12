@@ -226,12 +226,12 @@ def lvis_fast_eval_recall(results,
             for idx in range(len(results)):
                 proposals.append(results[idx][-1])
             results = proposals
+        assert isinstance(results, list), \
+            'results must be a list of numpy arrays, not {}'.format(type(results))
     elif not isinstance(results, list):
         raise TypeError(
             'results must be a list of numpy arrays or a filename, not {}'.
             format(type(results)))
-    assert isinstance(results, list), \
-        'results must be a list of numpy arrays, not {}'.format(type(results))
 
     img_ids = lvisEval.lvis_gt.get_img_ids()
     area_rngs = lvisEval.params.area_rng
@@ -275,7 +275,7 @@ def lvis_fast_eval_recall(results,
 
         for ann in ann_info:
             for area_idx, area_rng in enumerate(area_rngs):
-                if area_rng[0] <= ann['area'] <= area_rng[1]:
+                if area_rng[0] <= ann['area'] < area_rng[1]:
                     group_idx = img_pl_group[ann['category_id']]
                     if area_idx == 0:
                         group_num[group_idx] += 1  # only count for area all
@@ -285,7 +285,7 @@ def lvis_fast_eval_recall(results,
 
         for det in det_info:
             for area_idx, area_rng in enumerate(area_rngs):
-                if area_rng[0] <= det['area'] <= area_rng[1]:
+                if area_rng[0] <= det['area'] < area_rng[1]:
                     x1, y1, w, h = det['bbox']
                     dt_bboxes[area_idx].append(
                         [x1, y1, x1 + w - 1, y1 + h - 1, det['score']])
