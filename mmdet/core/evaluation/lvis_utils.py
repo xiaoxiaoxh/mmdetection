@@ -7,6 +7,7 @@ from .recall import eval_recalls
 from collections import defaultdict, OrderedDict
 from terminaltables import AsciiTable
 
+
 class ParamsCustom(Params):
     def __init__(self, iou_type):
         """Params for LVIS evaluation API."""
@@ -276,7 +277,8 @@ def lvis_fast_eval_recall(results,
             for area_idx, area_rng in enumerate(area_rngs):
                 if area_rng[0] <= ann['area'] <= area_rng[1]:
                     group_idx = img_pl_group[ann['category_id']]
-                    group_num[group_idx] += 1
+                    if area_idx == 0:
+                        group_num[group_idx] += 1  # only count for area all
                     x1, y1, w, h = ann['bbox']
                     gt_bboxes[group_idx, area_idx].append(
                         [x1, y1, x1 + w - 1, y1 + h - 1])

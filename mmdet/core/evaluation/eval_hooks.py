@@ -196,5 +196,5 @@ class LvisDistEvalmAPHook(DistEvalHook):
 
         runner.log_buffer.ready = True
         for res_type in res_types:
-            if osp.exists(result_files[res_type]):
+            if isinstance(result_files[res_type], str) and osp.exists(result_files[res_type]):
                 os.remove(result_files[res_type])
