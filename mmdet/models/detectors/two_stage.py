@@ -185,8 +185,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                                                      self.train_cfg.rcnn)
             sampling_img_ids = torch.cat(sampling_img_id_list, dim=0)  # add sampling_img_ids
             # add img_meta and train_cfg and sampling_img_ids
-            loss_bbox = self.bbox_head.loss(cls_score if valid_cls is None
-                                                else cls_score[:, valid_cls],
+            loss_bbox = self.bbox_head.loss(cls_score,
                                             bbox_pred,
                                             *bbox_targets,
                                             img_meta=img_meta,

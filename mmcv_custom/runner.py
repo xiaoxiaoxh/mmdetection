@@ -376,10 +376,16 @@ class Runner(mmcv.runner.Runner):
         self._iter = checkpoint['meta']['iter']
         if 'stage_epoch' in checkpoint['meta']:
             self._stage_epoch = checkpoint['meta']['stage_epoch']
+        else:
+            self._stage_epoch = self.epoch
         if 'stage_iter' in checkpoint['meta']:
             self._stage_iter = checkpoint['meta']['stage_iter']
+        else:
+            self._stage_iter = self.iter
         if 'stage' in checkpoint['meta']:
             self._stage = checkpoint['meta']['stage']
+        else:
+            self._stage = 0
         if 'optimizer' in checkpoint and resume_optimizer:
             self.optimizer.load_state_dict(checkpoint['optimizer'])
 
