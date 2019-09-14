@@ -170,13 +170,16 @@ class Runner(mmcv.runner.Runner):
         self.data_loader = data_loader
         self._max_iters = self._max_epochs * len(data_loader)
         model = self.model.module if hasattr(self.model, 'module') else self.model
-        model.bbox_head.max_iters = self.max_iters
-        model.bbox_head.max_epochs = self.max_epochs
+        model.max_iters = self.max_iters
+        model.max_epochs = self.max_epochs
+        model.current_stage = self.current_stage
         self.call_hook('before_train_epoch')
         for i, data_batch in enumerate(data_loader):
             self._inner_iter = i
-            model.bbox_head.iter = self.iter
-            model.bbox_head.epoch = self.epoch
+            model.iter = self.iter
+            model.epoch = self.epoch
+            model.stage_iter = self.stage_iter
+            model.stage_epoch = self.stage_epoch
             self.call_hook('before_train_iter')
             try:
                 outputs = self.batch_processor(
@@ -224,9 +227,9 @@ class Runner(mmcv.runner.Runner):
         if (stage_epoch == 0 or resume_optimizer) and runner.optimizer_cfg is not None:
             model = runner.model.module if hasattr(runner.model, 'module') else runner.model
             for name, module in model.named_children():
-                require_grad = name in ['backbone', 'neck', 'rpn']
-                for param in module.parameters():
-                    param.requires_grad = require_grad
+                if name not in ['backbone', 'neck', 'rpn']:
+                    for param in module.parameters():
+                        param.requires_grad = False
             runner.optimizer = runner.init_optimizer(runner.optimizer_cfg, filter_no_grad=True)
 
         if resume_optimizer:
@@ -242,9 +245,12 @@ class Runner(mmcv.runner.Runner):
         if (stage_epoch == 0 or resume_optimizer) and runner.optimizer_cfg is not None:
             model = runner.model.module if hasattr(runner.model, 'module') else runner.model
             for name, module in model.named_children():
-                require_grad = name not in ['backbone', 'neck', 'rpn']
-                for param in module.parameters():
-                    param.requires_grad = require_grad
+                if name in ['backbone', 'neck', 'rpn']:
+                    for param in module.parameters():
+                        param.requires_grad = False
+                else:
+                    for param in module.parameters():
+                        param.requires_grad = True
             runner.optimizer = runner.init_optimizer(runner.optimizer_cfg, filter_no_grad=True)
 
         if resume_optimizer:
@@ -279,7 +285,7 @@ class Runner(mmcv.runner.Runner):
             elif self.auto_resume_bool:
                 self.auto_resume()
             resume_optimizer = False
-        except ValueError as e:
+        except ValueError as e:  # can not load optimizer state_dict beacuse of param_group dismatching
             self.logger.warn(str(e))
             resume_optimizer = True
 
@@ -309,13 +315,13 @@ class Runner(mmcv.runner.Runner):
                                         type(mode)))
 
                 self._stage_max_epochs = epochs
-                self.model.module.current_stage = self.current_stage
                 for epoch in range(epochs):
                     if 'train' in mode and (self.epoch >= max_epochs or self.stage_epoch >= epochs):
                         break
                     epoch_runner(self, data_loader=data_loaders[i],
                                  stage_epoch=epoch,
                                  resume_optimizer=resume_optimizer, **kwargs)
+                resume_optimizer = False
                 self._stage += 1
                 self._stage_epoch = 0
                 self._stage_iter = 0
