@@ -350,13 +350,13 @@ class Runner(mmcv.runner.Runner):
                         meta=None):
         if meta is None:
             meta = dict(epoch=self.epoch + 1, iter=self.iter,
-                        stage_epoch=self.stage_epoch,
+                        stage_epoch=self.stage_epoch + 1,
                         stage_iter=self.stage_iter,
                         stage=self.current_stage,
                         )
         else:
             meta.update(epoch=self.epoch + 1, iter=self.iter,
-                        stage_epoch=self.stage_epoch,
+                        stage_epoch=self.stage_epoch + 1,
                         stage_iter=self.stage_iter,
                         stage=self.current_stage)
 
