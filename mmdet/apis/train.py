@@ -76,7 +76,8 @@ def _dist_train(model, dataset, cfg, validate=False):
 
     # build runner
     runner = Runner(model, batch_processor, cfg.optimizer, cfg.work_dir,
-                    cfg.log_level)
+                    cfg.log_level,
+                    resume_from=cfg.resume_from, load_from=cfg.load_from, auto_resume=cfg.auto_resume)
 
     # fp16 setting
     fp16_cfg = cfg.get('fp16', None)
@@ -110,12 +111,6 @@ def _dist_train(model, dataset, cfg, validate=False):
                 runner.register_hook(
                     DistEvalmAPHook(val_dataset_cfg, **eval_cfg))
 
-    if cfg.resume_from:
-        runner.resume(cfg.resume_from)
-    elif cfg.load_from:
-        runner.load_checkpoint(cfg.load_from)
-    elif cfg.auto_resume:
-        runner.auto_resume()
     runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
 
 
@@ -135,7 +130,8 @@ def _non_dist_train(model, dataset, cfg, validate=False):
 
     # build runner
     runner = Runner(model, batch_processor, cfg.optimizer, cfg.work_dir,
-                    cfg.log_level)
+                    cfg.log_level,
+                    resume_from=cfg.resume_from, load_from=cfg.load_from, auto_resume=cfg.auto_resume)
     # fp16 setting
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:
@@ -146,8 +142,4 @@ def _non_dist_train(model, dataset, cfg, validate=False):
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
 
-    if cfg.resume_from:
-        runner.resume(cfg.resume_from)
-    elif cfg.load_from:
-        runner.load_checkpoint(cfg.load_from)
     runner.run(data_loaders, cfg.workflow, cfg.total_epochs)

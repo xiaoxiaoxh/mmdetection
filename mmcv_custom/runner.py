@@ -22,7 +22,11 @@ class Runner(mmcv.runner.Runner):
                  optimizer=None,
                  work_dir=None,
                  log_level=logging.INFO,
-                 logger=None
+                 logger=None,
+                 resume_from=None,
+                 load_from=None,
+                 auto_resume=False,
+                 **kwargs
                  ):
         super(Runner, self).__init__(model,
                                      batch_processor,
@@ -30,11 +34,15 @@ class Runner(mmcv.runner.Runner):
                                      work_dir=work_dir,
                                      log_level=log_level,
                                      logger=logger)
+        self.resume_from = resume_from
+        self.load_from = load_from
+        self.auto_resume_bool = auto_resume
         if isinstance(optimizer, dict):
             self.optimizer_cfg = optimizer
         else:
             self.optimizer_cfg = None
         self._stage_epoch = 0
+        self._stage_max_epochs = 0
         self._stage_iter = 0
         self._stage = 0
 
@@ -52,6 +60,11 @@ class Runner(mmcv.runner.Runner):
     def current_stage(self):
         """int: Current stage num."""
         return self._stage
+
+    @property
+    def stage_max_epochs(self):
+        """int: Current stage max epochs."""
+        return self._stage_max_epochs
 
     @staticmethod
     def build_optimizer(model, optimizer_cfg, filter_no_grad=False):
@@ -156,13 +169,14 @@ class Runner(mmcv.runner.Runner):
         self.mode = 'train'
         self.data_loader = data_loader
         self._max_iters = self._max_epochs * len(data_loader)
-        self.model.module.bbox_head.max_iters = self.max_iters
-        self.model.module.bbox_head.max_epochs = self.max_epochs
+        model = self.model.module if hasattr(self.model, 'module') else self.model
+        model.bbox_head.max_iters = self.max_iters
+        model.bbox_head.max_epochs = self.max_epochs
         self.call_hook('before_train_epoch')
         for i, data_batch in enumerate(data_loader):
             self._inner_iter = i
-            self.model.module.bbox_head.iter = self.iter
-            self.model.module.bbox_head.epoch = self.epoch
+            model.bbox_head.iter = self.iter
+            model.bbox_head.epoch = self.epoch
             self.call_hook('before_train_iter')
             try:
                 outputs = self.batch_processor(
@@ -189,29 +203,52 @@ class Runner(mmcv.runner.Runner):
         self._epoch += 1
         self._stage_epoch += 1  # add _stage_epoch
 
-    def train_all_stage(self, data_loader, stage_epoch=0, **kwargs):
-        if stage_epoch == 0 and self.optimizer_cfg is not None:
+    def train_all_stage(self, data_loader, stage_epoch=0, resume_optimizer=False, **kwargs):
+        if (stage_epoch == 0 or resume_optimizer) and self.optimizer_cfg is not None:
+            model = self.model.module if hasattr(self.model, 'module') else self.model
+            for param in model.parameters():
+                param.requires_grad = True
             self.optimizer = self.init_optimizer(self.optimizer_cfg, filter_no_grad=True)
+
+        if resume_optimizer:
+            if self.resume_from:
+                self.resume(self.resume_from)
+            elif self.auto_resume_bool:
+                self.auto_resume()
 
         self.train(data_loader, **kwargs)
 
-    def train_rpn_stage(self, data_loader, stage_epoch=0, **kwargs):
-        if stage_epoch == 0 and self.optimizer_cfg is not None:
-            for name, module in self.model.module.named_children():
+    def train_rpn_stage(self, data_loader, stage_epoch=0, resume_optimizer=False, **kwargs):
+        if (stage_epoch == 0 or resume_optimizer) and self.optimizer_cfg is not None:
+            model = self.model.module if hasattr(self.model, 'module') else self.model
+            for name, module in model.named_children():
                 require_grad = name in ['backbone', 'neck', 'rpn']
                 for param in module.parameters():
                     param.requires_grad = require_grad
             self.optimizer = self.init_optimizer(self.optimizer_cfg, filter_no_grad=True)
 
+        if resume_optimizer:
+            if self.resume_from:
+                self.resume(self.resume_from)
+            elif self.auto_resume_bool:
+                self.auto_resume()
+
         self.train(data_loader, **kwargs)
 
-    def train_head_stage(self, data_loader, stage_epoch=0, **kwargs):
-        if stage_epoch == 0 and self.optimizer_cfg is not None:
-            for name, module in self.model.module.named_children():
+    def train_head_stage(self, data_loader, stage_epoch=0, resume_optimizer=False, **kwargs):
+        if (stage_epoch == 0 or resume_optimizer) and self.optimizer_cfg is not None:
+            model = self.model.module if hasattr(self.model, 'module') else self.model
+            for name, module in model.named_children():
                 require_grad = name not in ['backbone', 'neck', 'rpn']
                 for param in module.parameters():
                     param.requires_grad = require_grad
             self.optimizer = self.init_optimizer(self.optimizer_cfg, filter_no_grad=True)
+
+        if resume_optimizer:
+            if self.resume_from:
+                self.resume(self.resume_from)
+            elif self.auto_resume_bool:
+                self.auto_resume()
 
         self.train(data_loader, **kwargs)
 
@@ -230,6 +267,18 @@ class Runner(mmcv.runner.Runner):
         assert isinstance(data_loaders, list)
         assert mmcv.is_list_of(workflow, tuple)
         assert len(data_loaders) == len(workflow)
+
+        try:
+            if self.resume_from:
+                self.resume(self.resume_from)
+            elif self.load_from:
+                self.load_checkpoint(self.load_from)
+            elif self.auto_resume_bool:
+                self.auto_resume()
+            resume_optimizer = False
+        except ValueError as e:
+            self.logger.warn(str(e))
+            resume_optimizer = True
 
         self._max_epochs = max_epochs
         work_dir = self.work_dir if self.work_dir is not None else 'NONE'
@@ -253,13 +302,15 @@ class Runner(mmcv.runner.Runner):
                     raise TypeError('mode in workflow must be a str or '
                                     'callable function, not {}'.format(
                                         type(mode)))
-
                 self._stage_epoch = 0
                 self._stage_iter = 0
+                self._stage_max_epochs = epochs
+                self.model.module.current_stage = self.current_stage
                 for epoch in range(epochs):
-                    if 'train' in mode and self.epoch >= max_epochs:
+                    if 'train' in mode and (self.epoch >= max_epochs or self.stage_epoch >= epochs):
                         return
-                    epoch_runner(data_loaders[i], stage_epoch=epoch, **kwargs)
+                    epoch_runner(data_loaders[i], stage_epoch=epoch,
+                                 resume_optimizer=resume_optimizer, **kwargs)
                 self._stage += 1
 
         time.sleep(1)  # wait for some hooks like loggers to finish
@@ -291,9 +342,16 @@ class Runner(mmcv.runner.Runner):
                         save_optimizer=True,
                         meta=None):
         if meta is None:
-            meta = dict(epoch=self.epoch + 1, iter=self.iter)
+            meta = dict(epoch=self.epoch + 1, iter=self.iter,
+                        stage_epoch=self.stage_epoch,
+                        stage_iter=self.stage_iter,
+                        stage=self.current_stage,
+                        )
         else:
-            meta.update(epoch=self.epoch + 1, iter=self.iter)
+            meta.update(epoch=self.epoch + 1, iter=self.iter,
+                        stage_epoch=self.stage_epoch,
+                        stage_iter=self.stage_iter,
+                        stage=self.current_stage)
 
         filename = filename_tmpl.format(self.epoch + 1)
         filepath = osp.join(out_dir, filename)
@@ -303,7 +361,31 @@ class Runner(mmcv.runner.Runner):
         # use relative symlink
         # mmcv.symlink(filename, linkpath)
 
-    def auto_resume(self):
+    def resume(self, checkpoint, resume_optimizer=True,
+               map_location='default'):
+        if map_location == 'default':
+            device_id = torch.cuda.current_device()
+            checkpoint = self.load_checkpoint(
+                checkpoint,
+                map_location=lambda storage, loc: storage.cuda(device_id))
+        else:
+            checkpoint = self.load_checkpoint(
+                checkpoint, map_location=map_location)
+
+        self._epoch = checkpoint['meta']['epoch']
+        self._iter = checkpoint['meta']['iter']
+        if 'stage_epoch' in checkpoint['meta']:
+            self._stage_epoch = checkpoint['meta']['stage_epoch']
+        if 'stage_iter' in checkpoint['meta']:
+            self._stage_iter = checkpoint['meta']['stage_iter']
+        if 'stage' in checkpoint['meta']:
+            self._stage = checkpoint['meta']['stage']
+        if 'optimizer' in checkpoint and resume_optimizer:
+            self.optimizer.load_state_dict(checkpoint['optimizer'])
+
+        self.logger.info('resumed epoch %d, iter %d', self.epoch, self.iter)
+
+    def auto_resume(self, resume_optimizer=True):
         latest_epoch = -1
         latest_name = ''
         for root, dirs, files in os.walk(self.work_dir, topdown=True):
@@ -316,7 +398,7 @@ class Runner(mmcv.runner.Runner):
         filename = osp.join(self.work_dir, latest_name)
         if latest_name != '' and latest_epoch >= 0 and osp.exists(filename):
             self.logger.info('latest checkpoint {} found'.format(latest_name))
-            self.resume(filename)
+            self.resume(filename, resume_optimizer=resume_optimizer)
         # linkname = osp.join(self.work_dir, 'latest.pth')
         # if osp.exists(linkname):
         #     self.logger.info('latest checkpoint found')
