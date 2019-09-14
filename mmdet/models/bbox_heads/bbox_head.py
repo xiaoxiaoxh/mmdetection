@@ -137,6 +137,7 @@ class BBoxHead(nn.Module):
              img_meta=None,
              rcnn_train_cfg=None,
              img_ids=None,
+             fake_labels=None,  # inner idxs of freq groups
              **kwargs):
         losses = dict()
         if cls_score is not None:
@@ -156,6 +157,7 @@ class BBoxHead(nn.Module):
                     'neg_category_ids' in img_meta[0] and \
                     'not_exhaustive_category_ids' in img_meta[0], \
                     'img_ids can not be none'
+                assert fake_labels is None
                 pos_idxs = labels > 0
                 neg_idxs = labels == 0
                 pos_cls_loss = self.loss_cls(
@@ -198,7 +200,7 @@ class BBoxHead(nn.Module):
                 avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
                 losses['loss_cls'] = self.loss_cls(
                     cls_score,
-                    labels,
+                    labels if fake_labels is None else fake_labels,
                     label_weights,
                     gamma=self.fc_cls.gamma if hasattr(self.fc_cls, 'gamma') else None,
                     avg_factor=avg_factor,
@@ -206,7 +208,9 @@ class BBoxHead(nn.Module):
             if hasattr(self.fc_cls, 'gamma'):
                 losses['cls_gamma'] = self.fc_cls.gamma
             # print('loss_cls: {}'.format(losses['loss_cls'].item()))
-            losses['acc'] = accuracy(cls_score[label_weights > 0, :], labels[label_weights > 0])
+            losses['acc'] = accuracy(cls_score[label_weights > 0, :],
+                                     labels[label_weights > 0] if fake_labels is None \
+                                     else fake_labels[label_weights > 0])
 
         if bbox_pred is not None:
             pos_inds = labels > 0

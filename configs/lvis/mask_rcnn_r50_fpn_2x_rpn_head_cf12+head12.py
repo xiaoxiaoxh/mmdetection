@@ -176,7 +176,7 @@ log_config = dict(
         dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
-evaluation = dict(interval=6)  # 3 by default
+evaluation = dict(interval=3)  # 3 by default
 # runtime settings
 total_epochs = 24
 dist_params = dict(backend='nccl')
@@ -185,4 +185,4 @@ work_dir = './work_dirs/mask_rcnn_r50_fpn_2x_rpn_head_cf12+head12'
 load_from = None
 resume_from = None
 auto_resume = True
-workflow = [('train_rpn_stage', 12), ('train_head_stage', 12)]
+workflow = [('train', 12), ('train_head_stage', 12)]
