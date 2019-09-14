@@ -208,12 +208,6 @@ class Runner(mmcv.runner.Runner):
 
     @staticmethod
     def train_all_stage(runner, data_loader, stage_epoch=0, resume_optimizer=False, **kwargs):
-        if stage_epoch == 0 or resume_optimizer:
-            model = runner.model.module if hasattr(runner.model, 'module') else runner.model
-            # TODO: freeze part of the params
-            for param in model.parameters():
-                param.requires_grad = True
-
         runner.train(data_loader, **kwargs)
 
     @staticmethod
@@ -301,9 +295,13 @@ class Runner(mmcv.runner.Runner):
                 for epoch in range(epochs):
                     if 'train' in mode and (self.epoch >= max_epochs or self.stage_epoch >= epochs):
                         break
-                    epoch_runner(self, data_loader=data_loaders[i],
-                                 stage_epoch=epoch,
-                                 resume_optimizer=resume_optimizer, **kwargs)
+                    if 'stage' in mode:
+                        # TODO: fix multiple data_loaders
+                        epoch_runner(self, data_loader=data_loaders[0],
+                                     stage_epoch=epoch,
+                                     resume_optimizer=resume_optimizer, **kwargs)
+                    else:
+                        epoch_runner(data_loaders[i], **kwargs)
                 resume_optimizer = False
                 self._stage += 1
                 self._stage_epoch = 0

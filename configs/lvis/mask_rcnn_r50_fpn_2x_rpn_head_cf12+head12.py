@@ -185,4 +185,4 @@ work_dir = './work_dirs/mask_rcnn_r50_fpn_2x_rpn_head_cf12+head12'
 load_from = None
 resume_from = None
 auto_resume = True
-workflow = [('train', 12), ('train_head_stage', 12)]
+workflow = [('train_all_stage', 12), ('train_head_stage', 12)]
