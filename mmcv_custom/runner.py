@@ -203,54 +203,57 @@ class Runner(mmcv.runner.Runner):
         self._epoch += 1
         self._stage_epoch += 1  # add _stage_epoch
 
-    def train_all_stage(self, data_loader, stage_epoch=0, resume_optimizer=False, **kwargs):
-        if (stage_epoch == 0 or resume_optimizer) and self.optimizer_cfg is not None:
-            model = self.model.module if hasattr(self.model, 'module') else self.model
+    @staticmethod
+    def train_all_stage(runner, data_loader, stage_epoch=0, resume_optimizer=False, **kwargs):
+        if (stage_epoch == 0 or resume_optimizer) and runner.optimizer_cfg is not None:
+            model = runner.model.module if hasattr(runner.model, 'module') else runner.model
             for param in model.parameters():
                 param.requires_grad = True
-            self.optimizer = self.init_optimizer(self.optimizer_cfg, filter_no_grad=True)
+            runner.optimizer = runner.init_optimizer(runner.optimizer_cfg, filter_no_grad=True)
 
         if resume_optimizer:
-            if self.resume_from:
-                self.resume(self.resume_from)
-            elif self.auto_resume_bool:
-                self.auto_resume()
+            if runner.resume_from:
+                runner.resume(runner.resume_from)
+            elif runner.auto_resume_bool:
+                runner.auto_resume()
 
-        self.train(data_loader, **kwargs)
+        runner.train(data_loader, **kwargs)
 
-    def train_rpn_stage(self, data_loader, stage_epoch=0, resume_optimizer=False, **kwargs):
-        if (stage_epoch == 0 or resume_optimizer) and self.optimizer_cfg is not None:
-            model = self.model.module if hasattr(self.model, 'module') else self.model
+    @staticmethod
+    def train_rpn_stage(runner, data_loader, stage_epoch=0, resume_optimizer=False, **kwargs):
+        if (stage_epoch == 0 or resume_optimizer) and runner.optimizer_cfg is not None:
+            model = runner.model.module if hasattr(runner.model, 'module') else runner.model
             for name, module in model.named_children():
                 require_grad = name in ['backbone', 'neck', 'rpn']
                 for param in module.parameters():
                     param.requires_grad = require_grad
-            self.optimizer = self.init_optimizer(self.optimizer_cfg, filter_no_grad=True)
+            runner.optimizer = runner.init_optimizer(runner.optimizer_cfg, filter_no_grad=True)
 
         if resume_optimizer:
-            if self.resume_from:
-                self.resume(self.resume_from)
-            elif self.auto_resume_bool:
-                self.auto_resume()
+            if runner.resume_from:
+                runner.resume(runner.resume_from)
+            elif runner.auto_resume_bool:
+                runner.auto_resume()
 
-        self.train(data_loader, **kwargs)
+        runner.train(data_loader, **kwargs)
 
-    def train_head_stage(self, data_loader, stage_epoch=0, resume_optimizer=False, **kwargs):
-        if (stage_epoch == 0 or resume_optimizer) and self.optimizer_cfg is not None:
-            model = self.model.module if hasattr(self.model, 'module') else self.model
+    @staticmethod
+    def train_head_stage(runner, data_loader, stage_epoch=0, resume_optimizer=False, **kwargs):
+        if (stage_epoch == 0 or resume_optimizer) and runner.optimizer_cfg is not None:
+            model = runner.model.module if hasattr(runner.model, 'module') else runner.model
             for name, module in model.named_children():
                 require_grad = name not in ['backbone', 'neck', 'rpn']
                 for param in module.parameters():
                     param.requires_grad = require_grad
-            self.optimizer = self.init_optimizer(self.optimizer_cfg, filter_no_grad=True)
+            runner.optimizer = runner.init_optimizer(runner.optimizer_cfg, filter_no_grad=True)
 
         if resume_optimizer:
-            if self.resume_from:
-                self.resume(self.resume_from)
-            elif self.auto_resume_bool:
-                self.auto_resume()
+            if runner.resume_from:
+                runner.resume(runner.resume_from)
+            elif runner.auto_resume_bool:
+                runner.auto_resume()
 
-        self.train(data_loader, **kwargs)
+        runner.train(data_loader, **kwargs)
 
     def run(self, data_loaders, workflow, max_epochs, **kwargs):
         """Start running.
@@ -289,6 +292,8 @@ class Runner(mmcv.runner.Runner):
 
         while self.epoch < max_epochs:
             for i, flow in enumerate(workflow):
+                if i < self.current_stage:
+                    continue
                 mode, epochs = flow
                 if isinstance(mode, str):  # self.train() or custom functions
                     if not hasattr(self, mode):
@@ -302,16 +307,18 @@ class Runner(mmcv.runner.Runner):
                     raise TypeError('mode in workflow must be a str or '
                                     'callable function, not {}'.format(
                                         type(mode)))
-                self._stage_epoch = 0
-                self._stage_iter = 0
+
                 self._stage_max_epochs = epochs
                 self.model.module.current_stage = self.current_stage
                 for epoch in range(epochs):
                     if 'train' in mode and (self.epoch >= max_epochs or self.stage_epoch >= epochs):
-                        return
-                    epoch_runner(data_loaders[i], stage_epoch=epoch,
+                        break
+                    epoch_runner(self, data_loader=data_loaders[i],
+                                 stage_epoch=epoch,
                                  resume_optimizer=resume_optimizer, **kwargs)
                 self._stage += 1
+                self._stage_epoch = 0
+                self._stage_iter = 0
 
         time.sleep(1)  # wait for some hooks like loggers to finish
         self.call_hook('after_run')
