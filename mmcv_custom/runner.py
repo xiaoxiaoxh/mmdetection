@@ -210,9 +210,10 @@ class Runner(mmcv.runner.Runner):
     def train_all_stage(runner, data_loader, stage_epoch=0, resume_optimizer=False, **kwargs):
         if (stage_epoch == 0 or resume_optimizer) and runner.optimizer_cfg is not None:
             model = runner.model.module if hasattr(runner.model, 'module') else runner.model
+            # TODO: freeze part of the params
             for param in model.parameters():
                 param.requires_grad = True
-            runner.optimizer = runner.init_optimizer(runner.optimizer_cfg, filter_no_grad=True)
+            runner.optimizer = runner.init_optimizer(runner.optimizer_cfg, filter_no_grad=False)
 
         if resume_optimizer:
             if runner.resume_from:
@@ -230,7 +231,7 @@ class Runner(mmcv.runner.Runner):
                 if name not in ['backbone', 'neck', 'rpn']:
                     for param in module.parameters():
                         param.requires_grad = False
-            runner.optimizer = runner.init_optimizer(runner.optimizer_cfg, filter_no_grad=True)
+            runner.optimizer = runner.init_optimizer(runner.optimizer_cfg, filter_no_grad=False)
 
         if resume_optimizer:
             if runner.resume_from:
@@ -251,7 +252,7 @@ class Runner(mmcv.runner.Runner):
                 else:
                     for param in module.parameters():
                         param.requires_grad = True
-            runner.optimizer = runner.init_optimizer(runner.optimizer_cfg, filter_no_grad=True)
+            runner.optimizer = runner.init_optimizer(runner.optimizer_cfg, filter_no_grad=False)
 
         if resume_optimizer:
             if runner.resume_from:
@@ -259,6 +260,7 @@ class Runner(mmcv.runner.Runner):
             elif runner.auto_resume_bool:
                 runner.auto_resume()
 
+        # TODO: init bbox head cls_fc weight
         runner.train(data_loader, **kwargs)
 
     def run(self, data_loaders, workflow, max_epochs, **kwargs):
