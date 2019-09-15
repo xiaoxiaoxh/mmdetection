@@ -31,9 +31,11 @@ class LvisDataSet(CustomDataset):
         self.freq_groups = [[] for _ in img_count_lbl]
         self.cat_group_idxs = [_ for _ in self.cat_ids]
         freq_group_count = {'f': 0,
-                            'cf': 0}
+                            'cf': 0,
+                            'rcf': 0}
         self.cat_fake_idxs = {'f': [-1 for _ in self.cat_ids],
-                              'cf': [-1 for _ in self.cat_ids]}
+                              'cf': [-1 for _ in self.cat_ids],
+                              'rcf': [-1 for _ in self.cat_ids]}
         self.freq_group_dict = {'rcf': (0, 1, 2), 'cf': (1, 2), 'f': (2, )}
         for value in self.lvis.cats.values():
             idx = value['id'] - 1
@@ -43,12 +45,19 @@ class LvisDataSet(CustomDataset):
             group_idx = img_count_lbl.index(value["frequency"])
             self.freq_groups[group_idx].append(idx + 1)
             self.cat_group_idxs[idx] = group_idx
+            if group_idx == 0:  # rare
+                freq_group_count['rcf'] += 1
+                self.cat_fake_idxs['rcf'][idx] = freq_group_count['rcf']
             if group_idx == 1:  # common
+                freq_group_count['rcf'] += 1
                 freq_group_count['cf'] += 1
+                self.cat_fake_idxs['rcf'][idx] = freq_group_count['rcf']
                 self.cat_fake_idxs['cf'][idx] = freq_group_count['cf']
             elif group_idx == 2:  # freq
+                freq_group_count['rcf'] += 1
                 freq_group_count['cf'] += 1
                 freq_group_count['f'] += 1
+                self.cat_fake_idxs['rcf'][idx] = freq_group_count['rcf']
                 self.cat_fake_idxs['cf'][idx] = freq_group_count['cf']
                 self.cat_fake_idxs['f'][idx] = freq_group_count['f']
 
