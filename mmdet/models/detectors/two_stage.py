@@ -40,6 +40,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             self.bbox_roi_extractor = builder.build_roi_extractor(
                 bbox_roi_extractor)
             self.bbox_head = builder.build_head(bbox_head)
+            self.use_bbox = True
+        else:
+            self.use_bbox = False
 
         if mask_head is not None:
             if mask_roi_extractor is not None:
@@ -50,6 +53,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 self.share_roi_extractor = True
                 self.mask_roi_extractor = self.bbox_roi_extractor
             self.mask_head = builder.build_head(mask_head)
+            self.use_mask = True
+        else:
+            self.use_mask = False
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -151,7 +157,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         else:
             proposal_list = proposals
 
-        if 'stage_gt_groups' in self.train_cfg.rcnn:
+        if 'stage_gt_groups' in self.train_cfg.rcnn and (self.use_bbox or self.use_mask):
             gt_groups = self.train_cfg.rcnn.stage_gt_groups
             assert isinstance(gt_groups, list) and len(gt_groups) > self.current_stage, \
                 'stage_gt_groups must be a list of tuples'
@@ -221,7 +227,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             valid_cls = None
 
         # assign gts and sample proposals
-        if self.with_bbox or self.with_mask:
+        if (self.with_bbox or self.with_mask) and (self.use_bbox or self.use_mask):
             bbox_assigner = build_assigner(self.train_cfg.rcnn.assigner)
             bbox_sampler = build_sampler(
                 self.train_cfg.rcnn.sampler, context=self)
@@ -246,7 +252,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 sampling_results.append(sampling_result)
 
         # bbox head forward and loss
-        if self.with_bbox:
+        if self.with_bbox and self.use_bbox:
             rois = bbox2roi([res.bboxes for res in sampling_results])
             # TODO: a more flexible way to decide which feature maps to use
             bbox_feats = self.bbox_roi_extractor(
@@ -274,7 +280,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             losses.update(loss_bbox)
 
         # mask head forward and loss
-        if self.with_mask:
+        if self.with_mask and self.use_mask:
             if not self.share_roi_extractor:
                 pos_rois = bbox2roi(
                     [res.pos_bboxes for res in sampling_results])

@@ -212,19 +212,18 @@ class Runner(mmcv.runner.Runner):
 
     @staticmethod
     def train_rpn_stage(runner, data_loader, stage_epoch=0, resume_optimizer=False, **kwargs):
-        if stage_epoch == 0 or resume_optimizer:
-            model = runner.model.module if hasattr(runner.model, 'module') else runner.model
-            for name, module in model.named_children():
-                if name not in ['backbone', 'neck', 'rpn_head']:
-                    for param in module.parameters():
-                        param.requires_grad = False
+        model = runner.model.module if hasattr(runner.model, 'module') else runner.model
+        model.use_bbox = False
+        model.use_mask = False
 
         runner.train(data_loader, **kwargs)
 
     @staticmethod
     def train_head_stage(runner, data_loader, stage_epoch=0, resume_optimizer=False, **kwargs):
+        model = runner.model.module if hasattr(runner.model, 'module') else runner.model
+        model.use_bbox = True
+        model.use_mask = True
         if stage_epoch == 0 or resume_optimizer:
-            model = runner.model.module if hasattr(runner.model, 'module') else runner.model
             for name, module in model.named_children():
                 if name in ['backbone', 'neck', 'rpn_head']:
                     for param in module.parameters():
