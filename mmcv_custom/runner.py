@@ -215,7 +215,7 @@ class Runner(mmcv.runner.Runner):
         if stage_epoch == 0 or resume_optimizer:
             model = runner.model.module if hasattr(runner.model, 'module') else runner.model
             for name, module in model.named_children():
-                if name not in ['backbone', 'neck', 'rpn']:
+                if name not in ['backbone', 'neck', 'rpn_head']:
                     for param in module.parameters():
                         param.requires_grad = False
 
@@ -226,7 +226,7 @@ class Runner(mmcv.runner.Runner):
         if stage_epoch == 0 or resume_optimizer:
             model = runner.model.module if hasattr(runner.model, 'module') else runner.model
             for name, module in model.named_children():
-                if name in ['backbone', 'neck', 'rpn']:
+                if name in ['backbone', 'neck', 'rpn_head']:
                     for param in module.parameters():
                         param.requires_grad = False
                 else:
