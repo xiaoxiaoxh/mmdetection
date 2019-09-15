@@ -130,12 +130,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                       gt_bboxes_ignore=None,
                       gt_masks=None,
                       proposals=None,
-                      gt_bboxes_f=None,
-                      gt_labels_f=None,
-                      gt_masks_f=None,
-                      gt_bboxes_cf=None,
-                      gt_labels_cf=None,
-                      gt_masks_cf=None,
+                      gt_valid_idxs=None,
                       **kwargs):
         x = self.extract_feat(img)
 
@@ -157,71 +152,56 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         else:
             proposal_list = proposals
 
-        if 'stage_gt_groups' in self.train_cfg.rcnn and (self.use_bbox or self.use_mask):
+        if 'stage_gt_groups' in self.train_cfg.rcnn and \
+                gt_valid_idxs is not None and \
+                (self.use_bbox or self.use_mask):
             gt_groups = self.train_cfg.rcnn.stage_gt_groups
             assert isinstance(gt_groups, list) and len(gt_groups) > self.current_stage, \
-                'stage_gt_groups must be a list of tuples'
-            gt_group = gt_groups[self.current_stage]
-            assert isinstance(gt_group, tuple)
-            cat_fake_idxs = img_meta[0]['cat_fake_idxs']
-            freq_groups = img_meta[0]['freq_groups']
+                'stage_gt_groups must be a list of strings'
+            cat_fake_idxs = img_meta[0]['cat_fake_idxs']  # {'f': [-1,-1,1,2...], 'cf': [-1,1,-1,2...]}
+            freq_groups = img_meta[0]['freq_groups']  # [[0,2...], [2,4...], [3,7...]]
+            freq_group_dict = img_meta[0]['freq_group_dict']  # {'rcf':(0,1,2), 'cf':(1,2), 'f':(2,)}
+            gt_group = gt_groups[self.current_stage]  # 'rcf' or 'cf or 'f'
+            assert gt_group in freq_group_dict and \
+                gt_group in cat_fake_idxs and \
+                gt_group in gt_valid_idxs[0], \
+                'gt_group must be in {}'.format(list(freq_group_dict.keys()))
+            gt_valid_idxs = [img_valid_idx[gt_group] for img_valid_idx in gt_valid_idxs]
             device = gt_bboxes[0].get_device()
-            if len(gt_group) < 3:
+            if gt_group != 'rcf':
                 valid_img_idx = []
-                if gt_group == (2, ):  # freq
-                    assert 'f' in cat_fake_idxs and gt_labels_f and gt_bboxes_f and gt_labels_f
-                    for i in range(img.size(0)):
-                        if gt_labels_f[i].shape[0] > 0:
-                            valid_img_idx.append(i)
-                    if len(valid_img_idx) == 0:
-                        return losses
+                for i in range(img.size(0)):
+                    if len(gt_valid_idxs[i]) > 0:
+                        valid_img_idx.append(i)
+                if len(valid_img_idx) == 0:
+                    return losses
 
-                    if self.with_bbox:
-                        del gt_bboxes, gt_bboxes_cf
-                        gt_bboxes = [gt_bboxes_f[i] for i in valid_img_idx]
-                    del gt_labels, gt_labels_cf
-                    gt_labels = [gt_labels_f[i] for i in valid_img_idx]
-                    if self.with_mask:
-                        del gt_masks, gt_masks_cf
-                        gt_masks = [gt_masks_f[i] for i in valid_img_idx]
-                    cat_fake_idxs = torch.Tensor(cat_fake_idxs['f']).long().to(device)
-                    cat_fake_idxs = torch.cat([cat_fake_idxs.new_zeros(1), cat_fake_idxs], dim=0)
-                    valid_cls = torch.Tensor(sorted(freq_groups[2])).long().to(device)
-                    valid_cls = torch.cat([valid_cls.new_zeros(1), valid_cls], dim=0)
-                elif gt_group == (1, 2):  # common, freq
-                    assert 'cf' in cat_fake_idxs and gt_bboxes_cf and gt_labels_cf and gt_masks_cf
-                    for i in range(img.size(0)):
-                        if gt_labels_cf[i].shape[0] > 0:
-                            valid_img_idx.append(i)
-                    if len(valid_img_idx) == 0:
-                        return losses
+                gt_labels = [gt_labels[i][gt_valid_idxs[i]] for i in valid_img_idx]
+                if self.with_bbox:
+                    gt_bboxes = [gt_bboxes[i][gt_valid_idxs[i], :] for i in valid_img_idx]
+                if self.with_mask:
+                    gt_masks = [gt_masks[i][gt_valid_idxs[i], :, :] for i in valid_img_idx]
 
-                    if self.with_bbox:
-                        del gt_bboxes, gt_bboxes_f
-                        gt_bboxes = [gt_bboxes_cf[i] for i in valid_img_idx]
-                    del gt_labels, gt_labels_f
-                    gt_labels = [gt_labels_cf[i] for i in valid_img_idx]
-                    if self.with_mask:
-                        del gt_masks, gt_masks_f
-                        gt_masks = [gt_masks_cf[i] for i in valid_img_idx]
-                    cat_fake_idxs = torch.Tensor(cat_fake_idxs['cf']).long().to(device)
-                    cat_fake_idxs = torch.cat([cat_fake_idxs.new_zeros(1), cat_fake_idxs], dim=0)
-                    valid_cls = torch.Tensor(sorted(freq_groups[1] + freq_groups[2])).long().to(device)
-                    valid_cls = torch.cat([valid_cls.new_zeros(1), valid_cls], dim=0)
+                cat_fake_idxs = torch.Tensor(cat_fake_idxs[gt_group]).long().to(device)
+                cat_fake_idxs = torch.cat([cat_fake_idxs.new_zeros(1), cat_fake_idxs], dim=0)
 
+                freq_groups_all = []
+                for group_idx in freq_group_dict[gt_group]:
+                    freq_groups_all += freq_groups[group_idx]
+                valid_cls = torch.Tensor(sorted(freq_groups_all)).long().to(device)
+                valid_cls = torch.cat([valid_cls.new_zeros(1), valid_cls], dim=0)
                 assert valid_cls.shape[0] == torch.max(cat_fake_idxs).item() + 1, \
                     'valid classes num must match max label value'
+
                 img = img[valid_img_idx, :, :, :]
                 x = [lvl[valid_img_idx, :, :, :] for lvl in x]
                 img_meta = [img_meta[i] for i in valid_img_idx]
                 if gt_bboxes_ignore:
                     gt_bboxes_ignore = [gt_bboxes_ignore[i] for i in valid_img_idx]
                 proposal_list = [proposal_list[i] for i in valid_img_idx]
-            elif gt_group == (0, 1, 2):  # rare, common, freq
+            else:  # rare, common, freq
                 cat_fake_idxs = None
                 valid_cls = None
-            else:
-                raise NotImplementedError
         else:
             cat_fake_idxs = None
             valid_cls = None
