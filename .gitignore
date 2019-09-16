@@ -118,3 +118,6 @@ work_dirs/
 
 # Pytorch
 *.pth
+
+# philly submit script
+submit_job_mmdet.py
