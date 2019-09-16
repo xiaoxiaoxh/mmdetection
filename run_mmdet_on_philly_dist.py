@@ -89,7 +89,7 @@ else:
         .format(args.auth, args.branch))
     # only master need to install package
     os.chdir(os.path.expanduser('~/mmdetection'))
-    os.system('pip install -v -e .')
+    os.system('pip install -e .')
     cfg = Config.fromfile(args.cfg)
     pretrained = cfg.get("pretrained", None)
     if pretrained is not None:
