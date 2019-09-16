@@ -1,10 +1,10 @@
 from __future__ import division
 import argparse
-import os
+import os.path as osp
 import sys
-path = os.getcwd()
-# print(path)
-sys.path.insert(0, path)
+# path = os.getcwd()
+# sys.path.insert(0, path)
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
 
 import torch
 import pprint
