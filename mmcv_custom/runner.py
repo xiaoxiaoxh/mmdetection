@@ -231,7 +231,7 @@ class Runner(mmcv.runner.Runner):
                 else:
                     for param in module.parameters():
                         param.requires_grad = True
-            if not resume_optimizer:
+            if stage_epoch == 0:
                 torch.nn.init.normal_(model.bbox_head.fc_cls.weight, 0, 0.01)
                 torch.nn.init.constant_(model.bbox_head.fc_cls.bias, 0)
 
