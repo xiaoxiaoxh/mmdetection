@@ -1,5 +1,5 @@
 # fp16 settings
-# fp16 = dict(loss_scale=512.)
+fp16 = dict(loss_scale=512.)
 
 # model settings
 model = dict(
@@ -46,9 +46,7 @@ model = dict(
         reg_class_agnostic=False,
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
-        samples_per_cls_file='data/LVIS/samples_per_cls.txt',  # for LVIS only
-    ),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
@@ -100,7 +98,6 @@ train_cfg = dict(
             pos_fraction=0.25,
             neg_pos_ub=-1,
             add_gt_as_proposals=True),
-        rw_epoch=8,  # start re-weighting loss from n-th epoch
         mask_size=28,
         pos_weight=-1,
         debug=False))
@@ -119,17 +116,16 @@ test_cfg = dict(
         mask_thr_binary=0.5))
 # dataset settings
 dataset_type = 'LvisDataSet'
-data_root = 'data/LVIS/'
+data_root = '/hdfs/public/v-xuehan/data/LVIS/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
-    imgs_per_gpu=4,
-    workers_per_gpu=4,
+    imgs_per_gpu=8,
+    workers_per_gpu=8,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'lvis_v0.5_train.json',
         img_prefix=data_root + 'train2017.zip@/',
-        samples_per_cls_file=data_root + 'samples_per_cls.txt',
         img_scale=(1333, 800),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -179,12 +175,12 @@ log_config = dict(
         dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
-evaluation = dict(interval=3)
+evaluation = dict(interval=3)  # 3 by default
 # runtime settings
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_rw8ep'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_1x_base'
 load_from = None
 resume_from = None
 auto_resume = True
