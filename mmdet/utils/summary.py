@@ -1,15 +1,9 @@
 import torch
 import torch.nn as nn
 import numpy as np
-import os
-import sys
-path = os.getcwd()
-# print(path)
-sys.path.insert(0, path)
 from mmdet.datasets.transforms import ImageTransform
 
 from collections import OrderedDict
-import mmdet.apis.inference as inference
 from mmdet.ops.dcn.deform_conv import DeformConv
 
 custom_operator_list = [DeformConv]
@@ -21,6 +15,8 @@ def is_custom_operator(module):
 
 
 def summary(model, cfg):
+    # Moving import here for avoiding circle import issue.
+    from ..apis.inference import _prepare_data
 
     def register_hook(name):
 
@@ -122,7 +118,7 @@ def summary(model, cfg):
     img_transform = ImageTransform(
         size_divisor=cfg.data.test.size_divisor, **cfg.img_norm_cfg)
     img = np.random.rand(*reversed(cfg.data.test.img_scale))
-    data = inference._prepare_data(img, img_transform, cfg, 'cuda')
+    data = _prepare_data(img, img_transform, cfg, 'cuda')
     fake_test_cfg = cfg.test_cfg.copy()
     if hasattr(fake_test_cfg, 'rcnn'):
         fake_test_cfg.rcnn.score_thr = 0
