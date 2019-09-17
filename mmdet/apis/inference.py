@@ -7,7 +7,7 @@ import pycocotools.mask as maskUtils
 import torch
 from mmcv.runner import load_checkpoint
 
-# from mmdet.core import get_classes
+from mmdet.core import get_classes
 from mmdet.datasets import to_tensor
 from mmdet.datasets.transforms import ImageTransform
 from mmdet.models import build_detector
@@ -39,8 +39,7 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
         else:
             warnings.warn('Class names are not saved in the checkpoint\'s '
                           'meta data, use COCO classes by default.')
-            # TODO: fix get_classes import issue
-            # model.CLASSES = get_classes('coco')
+            model.CLASSES = get_classes('coco')
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
     model.eval()
