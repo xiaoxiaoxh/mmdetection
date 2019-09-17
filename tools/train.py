@@ -12,7 +12,6 @@ import pprint
 from mmcv import Config
 import torch.distributed as dist
 
-import mmdet
 from mmdet import __version__
 from mmdet.apis import (get_root_logger, init_dist, set_random_seed,
                         train_detector)
