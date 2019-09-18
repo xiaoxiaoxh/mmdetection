@@ -232,8 +232,13 @@ class Runner(mmcv.runner.Runner):
                     for param in module.parameters():
                         param.requires_grad = True
             if stage_epoch == 0:
-                model.bbox_head.init_weights()
-                model.mask_head.init_weights()
+                if model.with_bbox:
+                    model.bbox_roi_extractor.init_weights()
+                    model.bbox_head.init_weights()
+                if model.with_mask:
+                    model.mask_head.init_weights()
+                    if not model.share_roi_extractor:
+                        model.mask_roi_extractor.init_weights()
 
         runner.train(data_loader, **kwargs)
 
