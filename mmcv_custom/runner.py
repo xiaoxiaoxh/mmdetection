@@ -297,8 +297,10 @@ class Runner(mmcv.runner.Runner):
 
                 self._stage_max_epochs = epochs
                 for epoch in range(epochs):
-                    if 'train' in mode and (self.epoch >= max_epochs or self.stage_epoch >= epochs):
+                    if 'train' in mode and self.epoch >= max_epochs or \
+                            ('stage' in mode and self.stage_epoch >= epochs):
                         break
+
                     if 'stage' in mode:
                         # TODO: fix multiple data_loaders
                         epoch_runner(self, data_loader=data_loaders[0],
