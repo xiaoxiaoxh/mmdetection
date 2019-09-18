@@ -12,11 +12,12 @@ from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
 from .Lvis import LvisDataSet
 from .mini_lvis import MiniLvisDataSet
+from .Lvis_coco import LvisCocoDataSet
 
 __all__ = [
     'CustomDataset', 'XMLDataset', 'CocoDataset', 'VOCDataset',
     'CityscapesDataset', 'GroupSampler', 'DistributedGroupSampler',
     'build_dataloader', 'to_tensor', 'random_scale', 'show_ann',
     'ConcatDataset', 'RepeatDataset', 'ExtraAugmentation', 'WIDERFaceDataset',
-    'DATASETS', 'build_dataset', 'LvisDataSet', 'MiniLvisDataSet'
+    'DATASETS', 'build_dataset', 'LvisDataSet', 'MiniLvisDataSet', 'LvisCocoDataSet'
 ]

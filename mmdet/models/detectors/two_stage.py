@@ -131,6 +131,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                       gt_masks=None,
                       proposals=None,
                       gt_valid_idxs=None,
+                      gt_bboxes_extra=None,
+                      gt_labels_extra=None,
+                      gt_masks_extra=None,
                       **kwargs):
         x = self.extract_feat(img)
 
@@ -158,18 +161,27 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             gt_groups = self.train_cfg.rcnn.stage_gt_groups
             assert isinstance(gt_groups, list) and len(gt_groups) > self.current_stage, \
                 'stage_gt_groups must be a list of strings'
-            cat_fake_idxs = img_meta[0]['cat_fake_idxs']  # {'f': [-1,-1,1,2...], 'cf': [-1,1,-1,2...]}
-            freq_groups = img_meta[0]['freq_groups']  # [[0,2...], [2,4...], [3,7...]]
-            freq_group_dict = img_meta[0]['freq_group_dict']  # {'rcf':(0,1,2), 'cf':(1,2), 'f':(2,)}
             gt_group = gt_groups[self.current_stage]  # 'rcf' or 'cf or 'f'
-            assert gt_group in freq_group_dict and \
-                gt_group in cat_fake_idxs and \
-                gt_group in gt_valid_idxs[0], \
-                'gt_group must be in {}'.format(list(freq_group_dict.keys()))
-            gt_valid_idxs = [img_valid_idx[gt_group] for img_valid_idx in gt_valid_idxs]
             device = gt_bboxes[0].get_device()
 
-            if gt_group != 'rcf':
+            if gt_group == 'coco':
+                gt_labels = gt_labels_extra
+                if self.with_bbox:
+                    gt_bboxes = gt_bboxes_extra
+                if self.with_mask:
+                    gt_masks = gt_masks_extra
+                cat_fake_idxs = None
+                valid_cls = torch.Tensor([0] + img_meta[0]['valid_cls_extra']).long().to(device)
+            elif gt_group != 'rcf':
+                cat_fake_idxs = img_meta[0]['cat_fake_idxs']  # {'f': [-1,-1,1,2...], 'cf': [-1,1,-1,2...]}
+                freq_groups = img_meta[0]['freq_groups']  # [[0,2...], [2,4...], [3,7...]]
+                freq_group_dict = img_meta[0]['freq_group_dict']  # {'rcf':(0,1,2), 'cf':(1,2), 'f':(2,)}
+                assert gt_group in freq_group_dict and \
+                    gt_group in cat_fake_idxs and \
+                    gt_group in gt_valid_idxs[0], \
+                    'gt_group must be in {}'.format(list(freq_group_dict.keys()))
+                gt_valid_idxs = [img_valid_idx[gt_group] for img_valid_idx in gt_valid_idxs]
+
                 valid_img_idx = []
                 for i in range(img.size(0)):
                     if len(gt_valid_idxs[i]) > 0:
@@ -200,7 +212,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 if gt_bboxes_ignore:
                     gt_bboxes_ignore = [gt_bboxes_ignore[i] for i in valid_img_idx]
                 proposal_list = [proposal_list[i] for i in valid_img_idx]
-            else:
+            else:  # rcf
                 cat_fake_idxs = None
                 valid_cls = None
         else:
