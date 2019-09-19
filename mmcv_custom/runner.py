@@ -279,9 +279,9 @@ class Runner(mmcv.runner.Runner):
 
         while self.epoch < max_epochs:
             for i, flow in enumerate(workflow):
-                if i < self.current_stage:
-                    continue
                 mode, epochs = flow
+                if 'stage' in mode and i < self.current_stage:
+                    continue
                 if isinstance(mode, str):  # self.train() or custom functions
                     if not hasattr(self, mode):
                         raise ValueError(
