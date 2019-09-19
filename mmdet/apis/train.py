@@ -93,7 +93,7 @@ def _dist_train(model, dataset, cfg, validate=False):
     runner.register_hook(DistSamplerSeedHook())
     # register eval hooks
     if validate:
-        val_dataset_cfg = cfg.data.val
+        val_dataset_cfg = cfg.data.test  # change to test dataset
         eval_cfg = cfg.get('evaluation', {})
         if isinstance(model.module, RPN):
             # TODO: implement recall hooks for other datasets
