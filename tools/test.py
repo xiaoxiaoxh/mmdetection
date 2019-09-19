@@ -215,6 +215,9 @@ def main():
     else:
         model.CLASSES = dataset.CLASSES
 
+    if 'git_hash' in checkpoint['meta']:
+        print('git hash: {}'.format(checkpoint['meta']['git_hash']))
+
     if args.analyze:
         result = dict()
         result['fc_weight'] = model.bbox_head.fc_cls.weight.data
