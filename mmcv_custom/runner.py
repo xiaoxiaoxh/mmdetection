@@ -224,14 +224,13 @@ class Runner(mmcv.runner.Runner):
         model.use_bbox = True
         model.use_mask = True
         if stage_epoch == 0 or resume_optimizer:
+            runner.logger.info('Freeze backbone, neck and rpn_head weights.')
             for name, module in model.named_children():
                 if name in ['backbone', 'neck', 'rpn_head']:
                     for param in module.parameters():
                         param.requires_grad = False
-                else:
-                    for param in module.parameters():
-                        param.requires_grad = True
             if stage_epoch == 0:
+                runner.logger.info('Re-init head weights.')
                 if model.with_bbox:
                     model.bbox_roi_extractor.init_weights()
                     model.bbox_head.init_weights()
