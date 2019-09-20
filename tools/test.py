@@ -35,7 +35,7 @@ def single_gpu_test(model, data_loader, show=False, show_gt=False, work_dir=None
         else:
             test_data = data
         with torch.no_grad():
-            result = model(return_loss=False, rescale=not show, out_proposal=False, **test_data)
+            result = model(return_loss=False, rescale=not show, out_proposal=True, **test_data)
         results.append(result)
         # TODO: support multiple imgs per gpu
         if show_gt:
@@ -62,7 +62,7 @@ def multi_gpu_test(model, data_loader, tmpdir=None):
         prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
         with torch.no_grad():
-            result = model(return_loss=False, rescale=True, out_proposal=False, **data)
+            result = model(return_loss=False, rescale=True, out_proposal=True, **data)
         results.append(result)
 
         if rank == 0:
