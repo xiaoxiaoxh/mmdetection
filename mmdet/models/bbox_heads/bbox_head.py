@@ -61,6 +61,7 @@ class BBoxHead(nn.Module):
             self.samples_per_cls = None
             self.prob_per_cls = None
 
+        self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
 
@@ -238,7 +239,10 @@ class BBoxHead(nn.Module):
                        cfg=None):
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))
-        scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
+        if self.use_sigmoid_cls:
+            scores = cls_score if cls_score is not None else None
+        else:
+            scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
 
         if bbox_pred is not None:
             bboxes = delta2bbox(rois[:, 1:], bbox_pred, self.target_means,
