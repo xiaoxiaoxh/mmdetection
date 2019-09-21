@@ -164,7 +164,7 @@ total_epochs = 12
 # learning policy
 lr_config = dict(
     policy='cosine',
-    by_epoch='False',
+    by_epoch=False,
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=1.0 / 3
